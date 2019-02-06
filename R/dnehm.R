@@ -131,7 +131,7 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=0){
 }
 
 
-#' A function for DNEHM estimation with bolasso selection.
+#' A function for DNEHM estimation with bolasso (Bach 2008) selection.
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param node A character string name of the variable that gives the node id
 #' @param time A character string name of the variable that gives the time, in integers
@@ -140,6 +140,7 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=0){
 #' @param threshold An integer such that an edge variable for node pair i/j will not be constructed if j did not experience more than 'threshold' events after i experienced them.
 #' @param covariates character vector of covariate names to include in the dnehm, excluding the intercept.
 #' @param a A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-a*(t-source_time)), where source_time is the time the sender experienced the event.
+#' @references Bach, Francis R. "Bolasso: model consistent lasso estimation through the bootstrap." In Proceedings of the 25th international conference on Machine learning, pp. 33-40. ACM, 2008.
 #' @return A glm object giving the logistic regression estimates of the effects of the covariates and the edge variables selected by bolasso on 'event'. The edge variable 'e[i]_[j]' indicates that i sends a diffusion tie to j.
 #' @examples
 #' \dontrun{

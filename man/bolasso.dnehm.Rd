@@ -2,7 +2,7 @@
 % Please edit documentation in R/dnehm.R
 \name{bolasso.dnehm}
 \alias{bolasso.dnehm}
-\title{A function for DNEHM estimation with bolasso selection.}
+\title{A function for DNEHM estimation with bolasso (Bach 2008) selection.}
 \usage{
 bolasso.dnehm(eha_data, node, time, event, cascade, covariates,
   threshold = 0, a = 0)
@@ -28,7 +28,7 @@ bolasso.dnehm(eha_data, node, time, event, cascade, covariates,
 A glm object giving the logistic regression estimates of the effects of the covariates and the edge variables selected by bolasso on 'event'. The edge variable 'e[i]_[j]' indicates that i sends a diffusion tie to j.
 }
 \description{
-A function for DNEHM estimation with bolasso selection.
+A function for DNEHM estimation with bolasso (Bach 2008) selection.
 }
 \examples{
 \dontrun{
@@ -73,4 +73,7 @@ recall
 precision
 summary(bolasso.results)
 }
+}
+\references{
+Bach, Francis R. "Bolasso: model consistent lasso estimation through the bootstrap." In Proceedings of the 25th international conference on Machine learning, pp. 33-40. ACM, 2008.
 }
