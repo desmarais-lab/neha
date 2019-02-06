@@ -71,5 +71,6 @@ recall <- mean(is.element(paste('e',ties,sep=""),bolasso.coefs))
 precision <- mean(is.element(bolasso.coefs,paste('e',ties,sep="")))
 recall
 precision
+summary(bolasso.results)
 }
 }

@@ -185,6 +185,7 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=0){
 #' precision <- mean(is.element(bolasso.coefs,paste('e',ties,sep="")))
 #' recall
 #' precision
+#' summary(bolasso.results)
 #' }
 #' @export
 bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=0){
@@ -219,9 +220,8 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=
   bolasso.eff <- names(freq.boot.est)[which(freq.boot.est == nboot)]
   colnames(diffusion_effects_variables) <- substr(colnames(diffusion_effects_variables),2,nchar(colnames(diffusion_effects_variables)))
   bolasso.x <- cbind(covariate_variables,diffusion_effects_variables[,bolasso.eff])
-  colnames(bolasso.x) <- c(covariates,bolasso.eff)
+  colnames(bolasso.x) <- c(covariates,paste("e",bolasso.eff,sep=""))
   data.for.dnehm <- data.frame(y_for_glmnet,bolasso.x)
-  colnames(bolasso.x) <- paste("e",colnames(bolasso.x),sep="")
   names(data.for.dnehm) <- c("y_for_glmnet",colnames(bolasso.x))
   formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(names(bolasso.x),collapse="+"),collapse=""))
   bolasso.est <- glm(formula.dnehm,family="binomial",y=T,x=T,data=data.for.dnehm)
