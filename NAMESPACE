@@ -3,3 +3,5 @@
 export(bolasso.dnehm)
 export(data_dnehm_discrete)
 export(simulate_dnehm_discrete)
+import(doParallel)
+import(parallel)

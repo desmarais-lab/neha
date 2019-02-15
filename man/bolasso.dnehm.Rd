@@ -5,7 +5,7 @@
 \title{A function for DNEHM estimation with bolasso (Bach 2008) selection.}
 \usage{
 bolasso.dnehm(eha_data, node, time, event, cascade, covariates,
-  threshold = 0, a = 0)
+  threshold = 0, a = 0, n_jobs = -1)
 }
 \arguments{
 \item{eha_data}{A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.}
@@ -23,6 +23,8 @@ bolasso.dnehm(eha_data, node, time, event, cascade, covariates,
 \item{threshold}{An integer such that an edge variable for node pair i/j will not be constructed if j did not experience more than 'threshold' events after i experienced them.}
 
 \item{a}{A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-a*(t-source_time)), where source_time is the time the sender experienced the event.}
+
+\item{n_jobs}{Integer, number of jobs to run in parallel. -1 means using all processors.}
 }
 \value{
 A glm object giving the logistic regression estimates of the effects of the covariates and the edge variables selected by bolasso on 'event'. The edge variable 'e[i]_[j]' indicates that i sends a diffusion tie to j.
