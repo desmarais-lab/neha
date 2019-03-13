@@ -4,7 +4,7 @@
 \alias{simulate_dnehm_discrete}
 \title{A function to simulate a single cascade from the discrete-time logistic specification DNEHM data generating process.}
 \usage{
-simulate_dnehm_discrete(x, node, time, beta, gamma, a = 0)
+simulate_dnehm_discrete(x, node, time, beta, gamma, a = -8)
 }
 \arguments{
 \item{x}{The [(number of nodes)x(number of observed time points)]x[number of covariates + 2] data frame of covariates to be used in simulating cascades. Note, each node must be at risk for the event until the maximum time. This function does not currently permit dyadic covariates that are themselves a function of past events (e.g., the number of geographically adjacent nodes that have experienced an event)}
@@ -17,7 +17,7 @@ simulate_dnehm_discrete(x, node, time, beta, gamma, a = 0)
 
 \item{gamma}{A (number of diffusion ties)x1 matrix with row names of the form "sending-node_receiving-node" such that sending and receiving node ids ## match elements of x[,node]. Elements should be non-negatave numeric values.}
 
-\item{a}{A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-a*(t-source_time)), where source_time is the time the sender experienced the event.}
+\item{a}{A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-exp(a)*(t-source_time)), where source_time is the time the sender experienced the event.}
 }
 \value{
 A data frame in discrete-time EHM format for a single cascade, in which there is at most one event occurrence for each node, indicated by the 'event' variable.
