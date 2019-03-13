@@ -309,7 +309,6 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=
       new.effs <- names(coef(bolasso.est))
       if(all(is.element(new.effs,last.effs)) & all(is.element(last.effs,new.effs))) converged <- TRUE
       last.effs <- new.effs
-      print(c(a,iter.num))
       iter.num <- iter.num + 1
 
     }
