@@ -144,8 +144,8 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8){
 #' @param threshold An integer such that an edge variable for node pair i/j will not be constructed if j did not experience more than 'threshold' events after i experienced them.
 #' @param covariates character vector of covariate names to include in the dnehm, excluding the intercept.
 #' @param a A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-exp(a)*(t-source_time)), where source_time is the time the sender experienced the event.
-#' @param estimate.a A logical value indicating whether or not to estimate the value of a.
-#' @param max.a.iter The maximum number of iterations in estimating the value of a. The runtime of bolasso.dnehm is approximately linear in the number of iterations of a-estimation. Estimation of a converges when the edges inferred under the new value of a are equivalent to those inferred under the previous value of a.
+#' @param estimate.a A logical value indicating whether or not to estimate the value of 'a'.
+#' @param n.a.grid The number of 'a' values to evaluate in the grid search for the best-fitting 'a'. The best-fitting value of 'a' is that which results in the lowest BIC of the logistic regression model estimated in the last step of bolasso. The grid is defined by a sequence of values given as log(log(p.seq)/(1-mean.time)), where mean.time is the average time for which each node is in each cascade, and p.seq is a sequence of length n.a.grid between 0.01 and 0.99. The value in p.seq corresponds to the proportion of the diffusion effect that remains at the mean.time time point, relative to the first time point that a diffusion effect is active. The lower the value of p.seq, the faster the diffusion effect decays with time.
 #' @param n_jobs Integer, number of jobs to run in parallel. -1 means using all processors.
 #'
 #' @references Bach, Francis R. "Bolasso: model consistent lasso estimation through the bootstrap." In Proceedings of the 25th international conference on Machine learning, pp. 33-40. ACM, 2008.
@@ -197,7 +197,12 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8){
 #' summary(bolasso.results)
 #' }
 #' @export
-bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8,estimate.a = T, n_jobs=1,max.a.iter=5){
+bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8,estimate.a = T, n_jobs=1,n.a.grid=5){
+
+  mean.time <- nrow(eha_data)/(length(unique(eha_data[,cascade]))*length(unique(eha_data[,node])))
+  n.grid <- n.a.grid
+  p.seq <- seq(0.01,0.99,length=n.grid)
+  a.seq = log(log(p.seq)/(1-mean.time))
 
   if(n_jobs == -1) n_jobs <- detectCores()
 
@@ -274,17 +279,10 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=
   formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
   bolasso.est <- glm(formula.dnehm,family="binomial",y=T,x=T,data=data.for.dnehm)
 
+  results.list <- list()
   if(estimate.a){
-    converged <- F
-    iter.num <- 1
-    last.effs <- names(coef(bolasso.est))
-    while(!(converged & iter.num <= max.a.iter)){
-
-      a <- optim(a,estimate.a.objective,method="BFGS",control=list(fnscale=-1), diffusion_effects_variables=diffusion_effects_variables,covariate_variables=covariate_variables,y_for_glmnet=y_for_glmnet,bolasso.eff=bolasso.eff)$par
-
-
-
-
+    for(i in 1:length(a.seq)){
+      a <- a.val[i]
       doParallel::registerDoParallel(cores = n_jobs)
       cl <- parallel::makeCluster(n_jobs)
       to_export = c('eha_data', 'node', 'time', 'event', 'covariates', 'cascade',
@@ -305,18 +303,19 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=
       formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
       bolasso.est <- glm(formula.dnehm,family="binomial",y=T,x=T,data=data.for.dnehm)
 
-
-      new.effs <- names(coef(bolasso.est))
-      if(all(is.element(new.effs,last.effs)) & all(is.element(last.effs,new.effs))) converged <- TRUE
-      last.effs <- new.effs
-      iter.num <- iter.num + 1
+      results.list[[i]] <- bolasso.est
 
     }
 
+    bolasso.est <- results.list[[which.min(lapply(results.list,BIC))]]
+    a <- a.seq[which.min(lapply(results.list,BIC))]
   }
 
   return(list(bolasso.est,a))
 }
+
+
+
 
 
 
