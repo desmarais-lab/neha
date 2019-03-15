@@ -282,7 +282,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=
   results.list <- list()
   if(estimate.a){
     for(i in 1:length(a.seq)){
-      a <- a.val[i]
+      a <- a.seq[i]
       doParallel::registerDoParallel(cores = n_jobs)
       cl <- parallel::makeCluster(n_jobs)
       to_export = c('eha_data', 'node', 'time', 'event', 'covariates', 'cascade',
