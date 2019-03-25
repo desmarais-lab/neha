@@ -4,9 +4,9 @@
 \alias{bolasso.dnehm}
 \title{A function for DNEHM estimation with bolasso (Bach 2008) selection.}
 \usage{
-bolasso.dnehm(eha_data, node, time, event, cascade, covariates,
+bolasso.dnehm(eha_data, node, time, event, cascade, covariates = NULL,
   threshold = 0, a = -8, estimate.a = T, n_jobs = 1,
-  max.a.iter = 5)
+  n.a.grid = 5)
 }
 \arguments{
 \item{eha_data}{A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.}
@@ -25,11 +25,11 @@ bolasso.dnehm(eha_data, node, time, event, cascade, covariates,
 
 \item{a}{A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-exp(a)*(t-source_time)), where source_time is the time the sender experienced the event.}
 
-\item{estimate.a}{A logical value indicating whether or not to estimate the value of a.}
+\item{estimate.a}{A logical value indicating whether or not to estimate the value of 'a'.}
 
 \item{n_jobs}{Integer, number of jobs to run in parallel. -1 means using all processors.}
 
-\item{max.a.iter}{The maximum number of iterations in estimating the value of a. The runtime of bolasso.dnehm is approximately linear in the number of iterations of a-estimation. Estimation of a converges when the edges inferred under the new value of a are equivalent to those inferred under the previous value of a.}
+\item{n.a.grid}{The number of 'a' values to evaluate in the grid search for the best-fitting 'a'. The best-fitting value of 'a' is that which results in the lowest BIC of the logistic regression model estimated in the last step of bolasso. The grid is defined by a sequence of values given as log(log(p.seq)/(1-mean.time)), where mean.time is the average time for which each node is in each cascade, and p.seq is a sequence of length n.a.grid between 0.01 and 0.99. The value in p.seq corresponds to the proportion of the diffusion effect that remains at the mean.time time point, relative to the first time point that a diffusion effect is active. The lower the value of p.seq, the faster the diffusion effect decays with time.}
 }
 \value{
 A glm object giving the logistic regression estimates of the effects of the covariates and the edge variables selected by bolasso on 'event'. The edge variable 'e[i]_[j]' indicates that i sends a diffusion tie to j.
@@ -66,7 +66,7 @@ rownames(gamma) <- ties
 simulated_data <- NULL
 # generate the data one cascade at a time
 for(c in 1:cascades){
-  simulated_cascade <- simulate_dnehm_discrete(x=data_for_sim,node="node",time="time",beta=beta,gamma=gamma,a=0)
+  simulated_cascade <- simulate_dnehm_discrete(x=data_for_sim,node="node",time="time",beta=beta,gamma=gamma,a=-8)
   simulated_cascade <- data.frame(simulated_cascade,cascade=c,stringsAsFactors=F)
   simulated_data <- rbind(simulated_data,simulated_cascade)
 }

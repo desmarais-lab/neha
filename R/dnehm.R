@@ -113,15 +113,21 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8){
   data_for_dnehm <- data_dnehm_discrete(eha_data,node=node,time=time,event=event,cascade=cascade,threshold=threshold)
   diffusion_effects_variables <- data_for_dnehm[,(ncol(eha_data)+1):ncol(data_for_dnehm)]
   diffusion_effects_variables <- (diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables))
-  covariate_variables <- cbind(eha_data[,covariates])
-  x_for_glmnet <- cbind(as.matrix(covariate_variables),as.matrix(diffusion_effects_variables))
-  colnames(x_for_glmnet) <- c(covariates,colnames(diffusion_effects_variables))
+  if(length(covariates) == 0){
+    x_for_glmnet <- as.matrix(diffusion_effects_variables)
+    colnames(x_for_glmnet) <- colnames(diffusion_effects_variables)
+  }
+  if(length(covariates) > 0){
+    covariate_variables <- cbind(eha_data[,covariates])
+    x_for_glmnet <- cbind(as.matrix(covariate_variables),as.matrix(diffusion_effects_variables))
+    colnames(x_for_glmnet) <- c(covariates,colnames(diffusion_effects_variables))
+  }
 
   y_for_glmnet <- eha_data[,event]
 
-  penalty.factors <- c(rep(0,ncol(covariate_variables)),rep(1,ncol(diffusion_effects_variables)))
+  penalty.factors <- c(rep(0,length(covariates)),rep(1,ncol(diffusion_effects_variables)))
 
-  lower.vals <- c(rep(-Inf,ncol(covariate_variables)),rep(0,ncol(diffusion_effects_variables)))
+  lower.vals <- c(rep(-Inf,length(covariates)),rep(0,ncol(diffusion_effects_variables)))
 
 
   dnehm_estimate <- glmnet::cv.glmnet(x_for_glmnet,y_for_glmnet,family="binomial",penalty.factor=penalty.factors,lower.limits=lower.vals,nfolds=10,alpha=1)
@@ -182,7 +188,7 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8){
 
 #' # generate the data one cascade at a time
 #' for(c in 1:cascades){
-#'   simulated_cascade <- simulate_dnehm_discrete(x=data_for_sim,node="node",time="time",beta=beta,gamma=gamma,a=0)
+#'   simulated_cascade <- simulate_dnehm_discrete(x=data_for_sim,node="node",time="time",beta=beta,gamma=gamma,a=-8)
 #'   simulated_cascade <- data.frame(simulated_cascade,cascade=c,stringsAsFactors=F)
 #'   simulated_data <- rbind(simulated_data,simulated_cascade)
 #' }
@@ -197,7 +203,7 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8){
 #' summary(bolasso.results)
 #' }
 #' @export
-bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8,estimate.a = T, n_jobs=1,n.a.grid=5){
+bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,threshold=0,a=-8,estimate.a = T, n_jobs=1,n.a.grid=5){
 
   mean.time <- nrow(eha_data)/(length(unique(eha_data[,cascade]))*length(unique(eha_data[,node])))
   n.grid <- n.a.grid
@@ -208,9 +214,17 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=
 
   data_for_dnehm <- data_dnehm_discrete(eha_data,node=node,time=time,event=event,cascade=cascade,threshold=threshold)
   diffusion_effects_variables <- data_for_dnehm[,(ncol(eha_data)+1):ncol(data_for_dnehm)]
-  covariate_variables <- cbind(eha_data[,covariates])
-  x_for_glmnet <- cbind(as.matrix(covariate_variables),as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))
-  colnames(x_for_glmnet) <- c(covariates,colnames(diffusion_effects_variables))
+
+  if(length(covariates)==0){
+    x_for_glmnet <- cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))
+    colnames(x_for_glmnet) <- colnames(diffusion_effects_variables)
+  }
+
+  if(length(covariates) > 0){
+    covariate_variables <- cbind(eha_data[,covariates])
+    x_for_glmnet <- cbind(as.matrix(covariate_variables),as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))
+    colnames(x_for_glmnet) <- c(covariates,colnames(diffusion_effects_variables))
+  }
 
   y_for_glmnet <- eha_data[,event]
 
@@ -245,18 +259,6 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=
     return(boot.recovered_edges)
   }
 
-  estimate.a.objective <- function(a,diffusion_effects_variables,covariate_variables,y_for_glmnet,bolasso.eff){
-    bolasso.x <- cbind(cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))[,match(bolasso.eff,colnames(diffusion_effects_variables))])
-    colnames(bolasso.x) <- bolasso.eff
-    bolasso.x <- cbind(covariate_variables,bolasso.x)
-    colnames(bolasso.x) <- c(covariates,switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep="")))
-    data.for.dnehm <- data.frame(y_for_glmnet,bolasso.x)
-    names(data.for.dnehm) <- c("y_for_glmnet",colnames(bolasso.x))
-    formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
-    bolasso.est <- glm(formula.dnehm,family="binomial",y=T,x=T,data=data.for.dnehm)
-    logLik(bolasso.est)
-  }
-
   seeds <- as.integer(round(1+2147483640*runif(nboot)))
   doParallel::registerDoParallel(cores = n_jobs)
   cl <- parallel::makeCluster(n_jobs)
@@ -272,11 +274,20 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=
   colnames(diffusion_effects_variables) <- substr(colnames(diffusion_effects_variables),2,nchar(colnames(diffusion_effects_variables)))
   bolasso.x <- cbind(cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))[,match(bolasso.eff,colnames(diffusion_effects_variables))])
   colnames(bolasso.x) <- bolasso.eff
-  bolasso.x <- cbind(covariate_variables,bolasso.x)
-  colnames(bolasso.x) <- c(covariates,switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep="")))
+  if(length(covariates) == 0){
+    bolasso.x <- bolasso.x
+    colnames(bolasso.x) <- switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep=""))
+  }
+  if(length(covariates) > 0){
+    bolasso.x <- cbind(covariate_variables,bolasso.x)
+    colnames(bolasso.x) <- c(covariates,switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep="")))
+  }
   data.for.dnehm <- data.frame(y_for_glmnet,bolasso.x)
   names(data.for.dnehm) <- c("y_for_glmnet",colnames(bolasso.x))
-  formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
+  if(length(colnames(bolasso.x)) ==0) formula.dnehm <- as.formula("y_for_glmnet~1")
+  if(length(colnames(bolasso.x)) > 0){
+    formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
+  }
   bolasso.est <- glm(formula.dnehm,family="binomial",y=T,x=T,data=data.for.dnehm)
 
   results.list <- list()
@@ -296,11 +307,20 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=
       bolasso.eff <- names(freq.boot.est)[which(freq.boot.est == nboot)]
       bolasso.x <- cbind(cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))[,match(bolasso.eff,colnames(diffusion_effects_variables))])
       colnames(bolasso.x) <- bolasso.eff
-      bolasso.x <- cbind(covariate_variables,bolasso.x)
-      colnames(bolasso.x) <- c(covariates,switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep="")))
+      if(length(covariates) == 0){
+        bolasso.x <- bolasso.x
+        colnames(bolasso.x) <- switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep=""))
+      }
+      if(length(covariates) > 0){
+        bolasso.x <- cbind(covariate_variables,bolasso.x)
+        colnames(bolasso.x) <- c(covariates,switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep="")))
+      }
       data.for.dnehm <- data.frame(y_for_glmnet,bolasso.x)
       names(data.for.dnehm) <- c("y_for_glmnet",colnames(bolasso.x))
-      formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
+      if(length(colnames(bolasso.x)) ==0) formula.dnehm <- as.formula("y_for_glmnet~1")
+      if(length(colnames(bolasso.x)) > 0){
+        formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
+      }
       bolasso.est <- glm(formula.dnehm,family="binomial",y=T,x=T,data=data.for.dnehm)
 
       results.list[[i]] <- bolasso.est
