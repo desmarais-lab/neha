@@ -12,4 +12,6 @@ LazyData: true
 RoxygenNote: 6.1.1
 Imports: combinat,
     glmnet,
-    doParallel
+    doParallel,
+    fastglm,
+    speedglm

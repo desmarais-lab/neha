@@ -141,7 +141,7 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8){
 #'
 #' @import doParallel
 #' @import parallel
-#'
+#' @import speedglm
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param node A character string name of the variable that gives the node id
 #' @param time A character string name of the variable that gives the time, in integers
@@ -288,7 +288,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
   if(length(colnames(bolasso.x)) > 0){
     formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
   }
-  bolasso.est <- glm(formula.dnehm,family="binomial",y=T,x=T,data=data.for.dnehm)
+  bolasso.est <- speedglm::speedglm(formula.dnehm,family=binomial(),data=data.for.dnehm)
 
   results.list <- list()
   if(estimate.a){
@@ -321,7 +321,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
       if(length(colnames(bolasso.x)) > 0){
         formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
       }
-      bolasso.est <- glm(formula.dnehm,family="binomial",y=T,x=T,data=data.for.dnehm)
+      bolasso.est <- speedglm::speedglm(formula.dnehm,family=binomial(),data=data.for.dnehm)
 
       results.list[[i]] <- bolasso.est
 
