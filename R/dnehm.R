@@ -326,8 +326,8 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
 
   results.list <- list()
   if(estimate.a){
-    for(i in 1:length(a.seq)){
-      a <- a.seq[i]
+    for(j in 1:length(a.seq)){
+      a <- a.seq[j]
       #doParallel::registerDoParallel(cores = n_jobs)
       #cl <- parallel::makeCluster(n_jobs)
       #to_export = c('eha_data', 'node', 'time', 'event', 'covariates', 'cascade',
@@ -389,7 +389,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
       }
       bolasso.est <- speedglm::speedglm(formula.dnehm,family=binomial(),data=data.for.dnehm)
 
-      results.list[[i]] <- bolasso.est
+      results.list[[j]] <- bolasso.est
 
     }
 
