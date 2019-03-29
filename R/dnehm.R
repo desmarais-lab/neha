@@ -238,7 +238,8 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
     boot.data <- lapply(boot.samp, function(x){
       eha_data[eha_data[, cascade] == boot.samp[x], ]
     })
-    boot.data <- data.frame(do.call('rbind', boot.data))
+    boot.data <- data.frame(do.call('rbind', boot.data),stringsAsFactors=F)
+    print(boot.data)
     boot.dnehm_estimate <- dnehm(eha_data = boot.data,
                                  node = node,
                                  time = time,
@@ -252,7 +253,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
     boot.dnehm.coef <- betas[, sel][betas[, sel] != 0]
     coef_names <- names(boot.dnehm.coef)
     not_sel <- c(1:(length(beta) - 1))
-    boot.recovered_edges <- substr(coef_names[-not_sel], 2,
+    boot.recovered_edges <- substr(coef_names[-not_sel], 1,
                                    nchar(coef_names[-not_sel]))
 
 
@@ -260,18 +261,54 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
   }
 
   seeds <- as.integer(round(1+2147483640*runif(nboot)))
-  doParallel::registerDoParallel(cores = n_jobs)
-  cl <- parallel::makeCluster(n_jobs)
-  to_export = c('eha_data', 'node', 'time', 'event', 'covariates', 'cascade',
-                'threshold', 'a', 'dnehm', 'data_dnehm_discrete','seeds')
-  parallel::clusterExport(cl = cl, varlist = to_export, envir = environment())
-  result <- parallel::parLapply(cl = cl, X = 1:nboot, fun = bs_iter)
-  parallel::stopCluster(cl)
-  boot.nonzero.est <- do.call(c, result)
+  #doParallel::registerDoParallel(cores = n_jobs)
+  #cl <- parallel::makeCluster(n_jobs)
+  #to_export = c('eha_data', 'node', 'time', 'event', 'covariates', 'cascade',
+                #'threshold', 'a', 'dnehm', 'data_dnehm_discrete','seeds')
+  #parallel::clusterExport(cl = cl, varlist = to_export, envir = environment())
+  # result <- parallel::parLapply(cl = cl, X = 1:nboot, fun = bs_iter)
+  #parallel::stopCluster(cl)
+  # boot.nonzero.est <- do.call(c, result)
+
+
+  result <- list()
+  boot.nonzero.est <- NULL
+  for(i in 1:nboot){
+    set.seed(seeds[i])
+    unique.cascades <- unique(eha_data[,cascade])
+    boot.samp <- sample(unique.cascades, length(unique.cascades), rep=T)
+    #boot.data <- lapply(boot.samp, function(x){
+    #  eha_data[eha_data[, cascade] == boot.samp[x], ]
+    #})
+    # boot.data <- data.frame(do.call('rbind', boot.data),stringsAsFactors=F)
+    boot.data <- NULL
+    for(c in boot.samp){
+      boot.data <- rbind(boot.data,eha_data[eha_data[, cascade] == c, ])
+    }
+
+    print(boot.data)
+    boot.dnehm_estimate <- dnehm(eha_data = boot.data,
+                                 node = node,
+                                 time = time,
+                                 event = event,
+                                 covariates = covariates,
+                                 cascade = cascade,
+                                 threshold = threshold,
+                                 a = a)
+    betas <- boot.dnehm_estimate$glmnet.fit$beta
+    sel <- boot.dnehm_estimate$lambda == boot.dnehm_estimate$lambda.min
+    boot.dnehm.coef <- betas[, sel][betas[, sel] != 0]
+    coef_names <- names(boot.dnehm.coef)
+    not_sel <- c(1:(length(beta) - 1))
+    boot.recovered_edges <- substr(coef_names[-not_sel], 1,
+                                   nchar(coef_names[-not_sel]))
+    print(boot.recovered_edges)
+    boot.nonzero.est <- c(boot.nonzero.est,boot.recovered_edges)
+  }
 
   freq.boot.est <- table(boot.nonzero.est)
   bolasso.eff <- names(freq.boot.est)[which(freq.boot.est == nboot)]
-  colnames(diffusion_effects_variables) <- substr(colnames(diffusion_effects_variables),2,nchar(colnames(diffusion_effects_variables)))
+  colnames(diffusion_effects_variables) <- substr(colnames(diffusion_effects_variables),1,nchar(colnames(diffusion_effects_variables)))
   bolasso.x <- cbind(cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))[,match(bolasso.eff,colnames(diffusion_effects_variables))])
   colnames(bolasso.x) <- bolasso.eff
   if(length(covariates) == 0){
@@ -289,7 +326,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
     formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
   }
   bolasso.est <- speedglm::speedglm(formula.dnehm,family=binomial(),data=data.for.dnehm)
-
+  return(bolasso.est)
   results.list <- list()
   if(estimate.a){
     for(i in 1:length(a.seq)){
