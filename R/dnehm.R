@@ -34,10 +34,10 @@ data_dnehm_discrete <- function(eha_data,node,time,event,cascade,threshold=0){
     # find the time
     time_i <- eha_data[i,time]
     # find previous events in the same cascade
-    previous.events <- node[which( (eha_data[,time] < time_i) & ( eha_data[,cascade] == cascade_i) & (eha_data[,event]==1)  )  ]
+    previous.events <- node[which( (eha_data[,time] < time_i) & ( eha_data[,cascade] == cascade_i) & (eha_data[,event]==1)  & (node != node_i))  ]
     # calculate time since previous events
-    times.since.events <- time_i-eha_data[which( (eha_data[,time] < time_i) & ( eha_data[,cascade] == cascade_i) & (eha_data[,event]==1)  ),time  ]
     if(length(previous.events) > 0){
+      times.since.events <- time_i-eha_data[which( (eha_data[,time] < time_i) & ( eha_data[,cascade] == cascade_i) & (eha_data[,event]==1) & (node != node_i) ),time  ]
       col.ids <- paste(previous.events,node_i,sep="_")
       diff_var_mat[i,col.ids] <- times.since.events
     }
@@ -261,14 +261,6 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
   }
 
   seeds <- as.integer(round(1+2147483640*runif(nboot)))
-  #doParallel::registerDoParallel(cores = n_jobs)
-  #cl <- parallel::makeCluster(n_jobs)
-  #to_export = c('eha_data', 'node', 'time', 'event', 'covariates', 'cascade',
-                #'threshold', 'a', 'dnehm', 'data_dnehm_discrete','seeds')
-  #parallel::clusterExport(cl = cl, varlist = to_export, envir = environment())
-  # result <- parallel::parLapply(cl = cl, X = 1:nboot, fun = bs_iter)
-  #parallel::stopCluster(cl)
-  # boot.nonzero.est <- do.call(c, result)
 
 
   boot.nonzero.est <- NULL
@@ -328,14 +320,6 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
   if(estimate.a){
     for(j in 1:length(a.seq)){
       a <- a.seq[j]
-      #doParallel::registerDoParallel(cores = n_jobs)
-      #cl <- parallel::makeCluster(n_jobs)
-      #to_export = c('eha_data', 'node', 'time', 'event', 'covariates', 'cascade',
-       #             'threshold', 'a', 'dnehm', 'data_dnehm_discrete','seeds')
-      #parallel::clusterExport(cl = cl, varlist = to_export, envir = environment())
-      #result <- parallel::parLapply(cl = cl, X = 1:nboot, fun = bs_iter)
-      #parallel::stopCluster(cl)
-      #boot.nonzero.est <- do.call(c, result)
 
       boot.nonzero.est <- NULL
       for(i in 1:nboot){
