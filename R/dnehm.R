@@ -322,7 +322,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
   if(length(colnames(bolasso.x)) > 0){
     formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
   }
-  bolasso.est <- speedglm::speedglm(formula.dnehm,family=binomial(),data=data.for.dnehm)
+  bolasso.est <- glm(formula.dnehm,family="binomial",data=data.for.dnehm,x=T,y=T)
 
   results.list <- list()
   if(estimate.a){
@@ -387,7 +387,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
       if(length(colnames(bolasso.x)) > 0){
         formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
       }
-      bolasso.est <- speedglm::speedglm(formula.dnehm,family=binomial(),data=data.for.dnehm)
+      bolasso.est <- glm(formula.dnehm,family="binomial",data=data.for.dnehm,x=T,y=T)
 
       results.list[[j]] <- bolasso.est
 
