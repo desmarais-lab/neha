@@ -129,8 +129,10 @@ dnehm <- function(eha_data,node,time,event,cascade,covariates,threshold=0,a=-8){
 
   lower.vals <- c(rep(-Inf,length(covariates)),rep(0,ncol(diffusion_effects_variables)))
 
+  lambda <- exp(seq(log(0.001), log(5), length.out=15))
 
-  dnehm_estimate <- glmnet::cv.glmnet(x_for_glmnet,y_for_glmnet,family="binomial",penalty.factor=penalty.factors,lower.limits=lower.vals,nfolds=10,alpha=1)
+  dnehm_estimate <- glmnet::cv.glmnet(x_for_glmnet,y_for_glmnet,family="binomial",penalty.factor=penalty.factors,lower.limits=lower.vals,nfolds=10,alpha=1,lambda=lambda)
+
 
   dnehm_estimate
 
@@ -285,6 +287,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
                                  cascade = cascade,
                                  threshold = threshold,
                                  a = a)
+
     betas <- boot.dnehm_estimate$glmnet.fit$beta
     sel <- boot.dnehm_estimate$lambda == boot.dnehm_estimate$lambda.min
     boot.dnehm.coef <- betas[, sel][betas[, sel] != 0]
@@ -315,6 +318,8 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
     formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
   }
   bolasso.est <- glm(formula.dnehm,family="binomial",data=data.for.dnehm,x=T,y=T)
+
+  print("initial estimates complete")
 
   results.list <- list()
   if(estimate.a){
@@ -374,6 +379,8 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
       bolasso.est <- glm(formula.dnehm,family="binomial",data=data.for.dnehm,x=T,y=T)
 
       results.list[[j]] <- bolasso.est
+
+      print(paste("results",j,"complete"))
 
     }
 
