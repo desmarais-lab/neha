@@ -138,9 +138,8 @@ dnehm <- function(data_for_dnehm,node,time,event,cascade,covariates,threshold=0,
 
   lower.vals <- c(rep(-Inf,length(covariates)),rep(0,ncol(diffusion_effects_variables)))
 
-  lambda <- exp(seq(log(0.001), log(5), length.out=15))
 
-  dnehm_estimate <- glmnet::cv.glmnet(x_for_glmnet,y_for_glmnet,family="binomial",penalty.factor=penalty.factors,lower.limits=lower.vals,nfolds=10,alpha=1,lambda=lambda)
+  dnehm_estimate <- glmnet::cv.glmnet(x_for_glmnet,y_for_glmnet,family="binomial",penalty.factor=penalty.factors,lower.limits=lower.vals,nfolds=10,alpha=1)
 
 
   dnehm_estimate
@@ -214,7 +213,7 @@ dnehm <- function(data_for_dnehm,node,time,event,cascade,covariates,threshold=0,
 #' summary(bolasso.results)
 #' }
 #' @export
-bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,threshold=0,a=-8,estimate.a = T, n_jobs=1,n.a.grid=5){
+bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,threshold=0,a=-8,estimate.a = T, n_jobs=1,n.a.grid=5,data_only=F){
 
   mean.time <- nrow(eha_data)/(length(unique(eha_data[,cascade]))*length(unique(eha_data[,node])))
   n.grid <- n.a.grid
@@ -224,6 +223,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,thres
   if(n_jobs == -1) n_jobs <- detectCores()
 
   data_for_dnehm <- data_dnehm_discrete(eha_data,node=node,time=time,event=event,cascade=cascade,threshold=threshold,covariates=covariates)
+  if(data_only) return(data_for_dnehm)
   diffusion_effects_variables <- data_for_dnehm[,(ncol(eha_data)+1):ncol(data_for_dnehm)]
 
   if(length(covariates)==0){
