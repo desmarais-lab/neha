@@ -4,7 +4,7 @@
 \alias{data_dnehm_discrete}
 \title{A function to create data for DNEHM with discrete time EHA data}
 \usage{
-data_dnehm_discrete(eha_data, node, time, event, cascade, threshold = 0)
+data_dnehm_discrete(eha_data, node, time, event, cascade, covariates)
 }
 \arguments{
 \item{eha_data}{A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.}

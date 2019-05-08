@@ -6,7 +6,7 @@
 \usage{
 bolasso.dnehm(eha_data, node, time, event, cascade, covariates = NULL,
   threshold = 0, a = -8, estimate.a = T, n_jobs = 1,
-  n.a.grid = 5)
+  n.a.grid = 5, data_only = F)
 }
 \arguments{
 \item{eha_data}{A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.}
@@ -71,7 +71,7 @@ for(c in 1:cascades){
   simulated_data <- rbind(simulated_data,simulated_cascade)
 }
 
-bolasso.results <- bolasso.dnehm(simulated_data,node="node",time="time",event="event",cascade="cascade",covariates="covariate",threshold=0,a=-8)
+bolasso.results <- bolasso.dnehm(simulated_data,node="node",time="time",event="event",cascade="cascade",covariates="covariate",a=-8)
 
 bolasso.coefs <- names(coef(bolasso.results))[-(1:length(beta))]
 recall <- mean(is.element(paste('e',ties,sep=""),bolasso.coefs))

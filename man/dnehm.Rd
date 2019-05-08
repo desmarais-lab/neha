@@ -4,12 +4,10 @@
 \alias{dnehm}
 \title{A function to estimate DNEHM parameters. This is used internally by bolasso.dnehm.}
 \usage{
-dnehm(eha_data, node, time, event, cascade, covariates, threshold = 0,
-  a = -8)
+dnehm(data_for_dnehm, node, time, event, cascade, covariates,
+  threshold = 0, a = -8)
 }
 \arguments{
-\item{eha_data}{A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.}
-
 \item{time}{A character string name of the variable that gives the time, in integers}
 
 \item{event}{A character string name of the variable that gives the binary 0/1 indicator of event occurrence.}
@@ -19,6 +17,8 @@ dnehm(eha_data, node, time, event, cascade, covariates, threshold = 0,
 \item{threshold}{An integer such that an edge variable for node pair i/j will not be constructed if j did not experience more than 'threshold' events after i experienced them.}
 
 \item{a}{A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-exp(a)*(t-source_time)), where source_time is the time the sender experienced the event.}
+
+\item{eha_data}{A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.}
 
 \item{A}{character string name of the variable that gives the node id}
 

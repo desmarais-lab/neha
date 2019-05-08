@@ -3,6 +3,7 @@
 export(bolasso.dnehm)
 export(data_dnehm_discrete)
 export(simulate_dnehm_discrete)
+import(SIS)
 import(doParallel)
+import(glmnet)
 import(parallel)
-import(speedglm)
