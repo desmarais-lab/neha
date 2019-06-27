@@ -27,7 +27,13 @@ bolasso.neha(eha_data, node, time, event, cascade, covariates = NULL,
 \item{n_jobs}{Integer, number of jobs to run in parallel. -1 means using all processors.}
 }
 \value{
-A glm object giving the logistic regression estimates of the effects of the covariates and the edge variables selected by bolasso on 'event'. The edge variable 'e[i]_[j]' indicates that i sends a diffusion tie to j.
+A list with the following objects.
+\itemize{
+  \item neha.estimate - glm object giving the final neha estimates.
+  \item a.estimate - estimate of a.
+  \item formula.neha - formula needed to run final neha specification.
+  \item data.for.neha - data frame that includes the edge variables required to run final neha specification.
+}
 }
 \description{
 A function for NEHA estimation with bolasso (Bach 2008) selection.

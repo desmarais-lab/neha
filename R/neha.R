@@ -154,8 +154,13 @@ neha <- function(data_for_neha,node,time,event,cascade,covariates,threshold=0,a=
 #' @param n_jobs Integer, number of jobs to run in parallel. -1 means using all processors.
 #'
 #' @references Bach, Francis R. "Bolasso: model consistent lasso estimation through the bootstrap." In Proceedings of the 25th international conference on Machine learning, pp. 33-40. ACM, 2008.
-#' @return A glm object giving the logistic regression estimates of the effects of the covariates and the edge variables selected by bolasso on 'event'. The edge variable 'e[i]_[j]' indicates that i sends a diffusion tie to j.
-#' @return
+#' @return A list with the following objects.
+#' \itemize{
+#'   \item neha.estimate - glm object giving the final neha estimates.
+#'   \item a.estimate - estimate of a.
+#'   \item formula.neha - formula needed to run final neha specification.
+#'   \item data.for.neha - data frame that includes the edge variables required to run final neha specification.
+#' }
 #' @examples
 #' \dontrun{
 #' # Simulation study of the precision and recall of NEHA
