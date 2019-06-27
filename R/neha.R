@@ -209,6 +209,15 @@ neha <- function(data_for_neha,node,time,event,cascade,covariates,threshold=0,a=
 #' }
 #' @export
 bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,estimate.a = T, n_jobs=1,data_only=F){
+		
+  # find out if node is numeric
+  n1c <- substr(as.character(eha_data[,node]),1,1)
+  
+  if(!all(is.element(n1c,letters))){
+  	print("appending n_ to beginning of all node id's since at least one seems numeric")
+  	eha_data[,node] <- paste("n_",eha_data[,node],sep="")
+  }
+
 
   eha_data <- eha_data[,c(node,time,event,cascade,covariates)]
 
@@ -305,21 +314,17 @@ bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,e
   freq.boot.est <- table(boot.nonzero.est)
   bolasso.eff <- names(freq.boot.est)[which(freq.boot.est == nboot)]
 
-  colnames(diffusion_effects_variables) <- substr(colnames(diffusion_effects_variables),2,nchar(colnames(diffusion_effects_variables)))
-
-  bolasso.eff <- substr(bolasso.eff,2,nchar(bolasso.eff))
-
   bolasso.eff <- bolasso.eff[is.element(bolasso.eff,colnames(diffusion_effects_variables))]
 
   bolasso.x <- cbind(cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))[,match(bolasso.eff,colnames(diffusion_effects_variables))])
   colnames(bolasso.x) <- bolasso.eff
   if(length(covariates) == 0){
     bolasso.x <- bolasso.x
-    colnames(bolasso.x) <- switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep=""))
+    colnames(bolasso.x) <- switch((length(bolasso.eff)>0) + 1,NULL,paste("e_",bolasso.eff,sep=""))
   }
   if(length(covariates) > 0){
     bolasso.x <- cbind(covariate_variables,bolasso.x)
-    colnames(bolasso.x) <- c(covariates,switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep="")))
+    colnames(bolasso.x) <- c(covariates,switch((length(bolasso.eff)>0) + 1,NULL,paste("e_",bolasso.eff,sep="")))
   }
   data.for.neha <- data.frame(y_for_glmnet,bolasso.x)
   names(data.for.neha) <- c("y_for_glmnet",colnames(bolasso.x))
