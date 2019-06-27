@@ -213,7 +213,7 @@ bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,e
   # find out if node is numeric
   n1c <- substr(as.character(eha_data[,node]),1,1)
   
-  if(!all(is.element(n1c,letters))){
+  if(!all(is.element(tolower(n1c),letters))){
   	print("appending n_ to beginning of all node id's since at least one seems numeric")
   	eha_data[,node] <- paste("n_",eha_data[,node],sep="")
   }
@@ -334,7 +334,7 @@ bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,e
   }
   bolasso.est <- glm(formula.neha,family="binomial",data=data.for.neha,x=T,y=T)
 
-  return(list(neha.estimate = bolasso.est,a.estimate=a,formula.neha=formula.neha,data.for.neha=data.for.neha))
+  return(list(neha.estimate = bolasso.est,a.estimate=a,formula.neha=formula.neha,data.for.neha=data.frame(data.for.neha,eha_data[,c(node,time,event,cascade)])))
 }
 
 
