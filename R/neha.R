@@ -1,6 +1,5 @@
 
-#' A function to create data for DNEHM with discrete time EHA data
-#' @import SIS
+#' A function to create data for NEHA with discrete time EHA data
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param node A character string name of the variable that gives the node id.
 #' @param time A character string name of the variable that gives the time, in integers.
@@ -9,7 +8,7 @@
 #' @param threshold An integer such that an edge variable for node pair i/j will not be constructed if j did not experience more than 'threshold' events after i experienced them.
 #' @return A data frame in which, in addition to all of the variables in 'eha_data', there is one column for each directed dyad that meets the 'threshold' condition, named 'i_j' in which the value indicates the number of time points before 'time' that 'i' experienced the event in the respective 'cascade'. If 'i' did not experience the cascade before 'time', the value is 0.
 #' @export
-data_dnehm_discrete <- function(eha_data,node,time,event,cascade,covariates){
+data_neha_discrete <- function(eha_data,node,time,event,cascade,covariates){
 
   # extract node ids
   node <- eha_data[,node]
@@ -56,7 +55,7 @@ data_dnehm_discrete <- function(eha_data,node,time,event,cascade,covariates){
 
 
 
-#' A function to simulate a single cascade from the discrete-time logistic specification DNEHM data generating process.
+#' A function to simulate a single cascade from the discrete-time logistic specification NEHA data generating process.
 #' @param x The [(number of nodes)x(number of observed time points)]x[number of covariates + 2] data frame of covariates to be used in simulating cascades. Note, each node must be at risk for the event until the maximum time. This function does not currently permit dyadic covariates that are themselves a function of past events (e.g., the number of geographically adjacent nodes that have experienced an event)
 #' @param node A character string name of the variable in x that gives the node id
 #' @param time A character string name of the variable in x that gives the time, in integers
@@ -65,7 +64,7 @@ data_dnehm_discrete <- function(eha_data,node,time,event,cascade,covariates){
 #' @param a A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-exp(a)*(t-source_time)), where source_time is the time the sender experienced the event.
 #' @return A data frame in discrete-time EHM format for a single cascade, in which there is at most one event occurrence for each node, indicated by the 'event' variable.
 #' @export
-simulate_dnehm_discrete <- function(x,node,time,beta,gamma,a=-8){
+simulate_neha_discrete <- function(x,node,time,beta,gamma,a=-8){
   times <- sort(unique(x[,time]))
   nodes <- sort(unique(x[,node]))
   x_linear_predictor <- as.matrix(x[,row.names(beta)])%*%beta
@@ -102,46 +101,44 @@ simulate_dnehm_discrete <- function(x,node,time,beta,gamma,a=-8){
   data.frame(na.omit(x),stringsAsFactors=F)
 }
 
-#' A function to estimate DNEHM parameters. This is used internally by bolasso.dnehm.
+#' A function to estimate NEHA parameters. This is used internally by bolasso.neha.
 #' @import glmnet
-#' @import biglasso
-#' @import bigmemory
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param A character string name of the variable that gives the node id
 #' @param time A character string name of the variable that gives the time, in integers
 #' @param event A character string name of the variable that gives the binary 0/1 indicator of event occurrence.
 #' @param A character string name of the variable that gives the cascade id
 #' @param threshold An integer such that an edge variable for node pair i/j will not be constructed if j did not experience more than 'threshold' events after i experienced them.
-#' @param covariates character vector of covariate names to include in the dnehm, excluding the intercept.
+#' @param covariates character vector of covariate names to include in the neha, excluding the intercept.
 #' @param a A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-exp(a)*(t-source_time)), where source_time is the time the sender experienced the event.
 # note1: this function does not currently permit dyadic covariates
-dnehm <- function(data_for_dnehm,node,time,event,cascade,covariates,threshold=0,a=-8){
-  diffusion_effects_variables <- data_for_dnehm[,(length(covariates)+5):ncol(data_for_dnehm)]
+neha <- function(data_for_neha,node,time,event,cascade,covariates,threshold=0,a=-8){
+  diffusion_effects_variables <- data_for_neha[,(length(covariates)+5):ncol(data_for_neha)]
   diffusion_effects_variables <- (diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables))
   if(length(covariates) == 0){
     x_for_glmnet <- as.matrix(diffusion_effects_variables)
     colnames(x_for_glmnet) <- colnames(diffusion_effects_variables)
   }
   if(length(covariates) > 0){
-    covariate_variables <- cbind(data_for_dnehm[,covariates])
+    covariate_variables <- cbind(data_for_neha[,covariates])
     x_for_glmnet <- cbind(as.matrix(covariate_variables),as.matrix(diffusion_effects_variables))
     colnames(x_for_glmnet) <- c(covariates,colnames(diffusion_effects_variables))
   }
 
-  y_for_glmnet <- data_for_dnehm[,event]
+  y_for_glmnet <- data_for_neha[,event]
 
   penalty.factors <- c(rep(0,length(covariates)),rep(1,ncol(diffusion_effects_variables)))
 
   lower.vals <- c(rep(-Inf,length(covariates)),rep(0,ncol(diffusion_effects_variables)))
 
-  dnehm_estimate <- glmnet::cv.glmnet(x_for_glmnet,y_for_glmnet,family="binomial",penalty.factor=penalty.factors,lower.limits=lower.vals,nfolds=10,alpha=1)
+  neha_estimate <- glmnet::cv.glmnet(x_for_glmnet,y_for_glmnet,family="binomial",penalty.factor=penalty.factors,lower.limits=lower.vals,nfolds=10,alpha=1,type.logistic="modified.Newton")
 
-  dnehm_estimate
+  neha_estimate
 
 }
 
 
-#' A function for DNEHM estimation with bolasso (Bach 2008) selection.
+#' A function for NEHA estimation with bolasso (Bach 2008) selection.
 #'
 #' @import doParallel
 #' @import parallel
@@ -151,16 +148,17 @@ dnehm <- function(data_for_dnehm,node,time,event,cascade,covariates,threshold=0,
 #' @param time A character string name of the variable that gives the time, in integers
 #' @param event A character string name of the variable that gives the binary 0/1 indicator of event occurrence.
 #' @param cascade A character string name of the variable that gives the cascade id
-#' @param covariates character vector of covariate names to include in the dnehm, excluding the intercept.
+#' @param covariates character vector of covariate names to include in the neha, excluding the intercept.
 #' @param a A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-exp(a)*(t-source_time)), where source_time is the time the sender experienced the event.
 #' @param estimate.a A logical value indicating whether or not to estimate the value of 'a'.
 #' @param n_jobs Integer, number of jobs to run in parallel. -1 means using all processors.
 #'
 #' @references Bach, Francis R. "Bolasso: model consistent lasso estimation through the bootstrap." In Proceedings of the 25th international conference on Machine learning, pp. 33-40. ACM, 2008.
 #' @return A glm object giving the logistic regression estimates of the effects of the covariates and the edge variables selected by bolasso on 'event'. The edge variable 'e[i]_[j]' indicates that i sends a diffusion tie to j.
+#' @return
 #' @examples
 #' \dontrun{
-#' # Simulation study of the precision and recall of DNEHM
+#' # Simulation study of the precision and recall of NEHA
 #' # basic data parameters
 #' cascades <- 100
 #' nodes <- 10
@@ -190,12 +188,12 @@ dnehm <- function(data_for_dnehm,node,time,event,cascade,covariates,threshold=0,
 
 #' # generate the data one cascade at a time
 #' for(c in 1:cascades){
-#'   simulated_cascade <- simulate_dnehm_discrete(x=data_for_sim,node="node",time="time",beta=beta,gamma=gamma,a=-8)
+#'   simulated_cascade <- simulate_neha_discrete(x=data_for_sim,node="node",time="time",beta=beta,gamma=gamma,a=-8)
 #'   simulated_cascade <- data.frame(simulated_cascade,cascade=c,stringsAsFactors=F)
 #'   simulated_data <- rbind(simulated_data,simulated_cascade)
 #' }
 #'
-#' bolasso.results <- bolasso.dnehm(simulated_data,node="node",time="time",event="event",cascade="cascade",covariates="covariate",a=-8)
+#' bolasso.results <- bolasso.neha(simulated_data,node="node",time="time",event="event",cascade="cascade",covariates="covariate",a=-8)
 #'
 #' bolasso.coefs <- names(coef(bolasso.results[[1]]))[-(1:length(beta))]
 #' recall <- mean(is.element(paste('e',ties,sep=""),bolasso.coefs))
@@ -205,18 +203,18 @@ dnehm <- function(data_for_dnehm,node,time,event,cascade,covariates,threshold=0,
 #' summary(bolasso.results)
 #' }
 #' @export
-bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,estimate.a = T, n_jobs=1,data_only=F){
+bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,estimate.a = T, n_jobs=1,data_only=F){
 
   eha_data <- eha_data[,c(node,time,event,cascade,covariates)]
 
   if(n_jobs == -1) n_jobs <- detectCores()
 
-  data_for_dnehm <- data_dnehm_discrete(eha_data,node=node,time=time,event=event,cascade=cascade,covariates=covariates)
+  data_for_neha <- data_neha_discrete(eha_data,node=node,time=time,event=event,cascade=cascade,covariates=covariates)
 
   print("data organization complete")
 
-  if(data_only) return(data_for_dnehm)
-  diffusion_effects_variables <- data_for_dnehm[,(ncol(eha_data)+1):ncol(data_for_dnehm)]
+  if(data_only) return(data_for_neha)
+  diffusion_effects_variables <- data_for_neha[,(ncol(eha_data)+1):ncol(data_for_neha)]
 
   if(length(covariates)==0){
     x_for_glmnet <- cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))
@@ -263,7 +261,7 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,
   for(boot.iter in 1:nboot){
     boot.ind <- NULL
     set.seed(seeds[boot.iter])
-    unique.cascades <- unique(data_for_dnehm[,cascade])
+    unique.cascades <- unique(data_for_neha[,cascade])
     boot.samp <- sample(unique.cascades, length(unique.cascades), rep=T)
     #boot.data <- lapply(boot.samp, function(x){
     #  eha_data[eha_data[, cascade] == boot.samp[x], ]
@@ -271,24 +269,24 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,
     # boot.data <- data.frame(do.call('rbind', boot.data),stringsAsFactors=F)
     boot.data <- NULL
     for(c in boot.samp){
-      boot.ind <- c(boot.ind,which(data_for_dnehm[, cascade] == c))
+      boot.ind <- c(boot.ind,which(data_for_neha[, cascade] == c))
     }
-    boot.data <- data_for_dnehm[boot.ind,]
+    boot.data <- data_for_neha[boot.ind,]
 
 
 
     if(boot.iter >= 1){
-      boot.dnehm_estimate <- dnehm(data_for_dnehm = boot.data,
+      boot.neha_estimate <- neha(data_for_neha = boot.data,
                                  node = node,
                                  time = time,
                                  event = event,
                                  covariates = covariates,
                                  cascade = cascade,
                                  a = a)
-      betas <- boot.dnehm_estimate$glmnet.fit$beta
-      sel <- which(boot.dnehm_estimate$lambda == boot.dnehm_estimate$lambda.min)
-      boot.dnehm.coef <- betas[, sel][betas[, sel] != 0]
-      coef_names <- names(boot.dnehm.coef)
+      betas <- boot.neha_estimate$glmnet.fit$beta
+      sel <- which(boot.neha_estimate$lambda == boot.neha_estimate$lambda.min)
+      boot.neha.coef <- betas[, sel][betas[, sel] != 0]
+      coef_names <- names(boot.neha.coef)
       not_sel <- c(1:length(covariates))
       boot.recovered_edges <- substr(coef_names[-not_sel], 1,
                                      nchar(coef_names[-not_sel]))
@@ -300,13 +298,11 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,
   }
 
   freq.boot.est <- table(boot.nonzero.est)
-  print(freq.boot.est)
   bolasso.eff <- names(freq.boot.est)[which(freq.boot.est == nboot)]
 
   colnames(diffusion_effects_variables) <- substr(colnames(diffusion_effects_variables),2,nchar(colnames(diffusion_effects_variables)))
 
   bolasso.eff <- substr(bolasso.eff,2,nchar(bolasso.eff))
-  print(bolasso.eff)
 
   bolasso.eff <- bolasso.eff[is.element(bolasso.eff,colnames(diffusion_effects_variables))]
 
@@ -320,211 +316,17 @@ bolasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,
     bolasso.x <- cbind(covariate_variables,bolasso.x)
     colnames(bolasso.x) <- c(covariates,switch((length(bolasso.eff)>0) + 1,NULL,paste("e",bolasso.eff,sep="")))
   }
-  data.for.dnehm <- data.frame(y_for_glmnet,bolasso.x)
-  names(data.for.dnehm) <- c("y_for_glmnet",colnames(bolasso.x))
-  if(length(colnames(bolasso.x)) ==0) formula.dnehm <- as.formula("y_for_glmnet~1")
+  data.for.neha <- data.frame(y_for_glmnet,bolasso.x)
+  names(data.for.neha) <- c("y_for_glmnet",colnames(bolasso.x))
+  if(length(colnames(bolasso.x)) ==0) formula.neha <- as.formula("y_for_glmnet~1")
   if(length(colnames(bolasso.x)) > 0){
-    formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
+    formula.neha <- as.formula(paste("y_for_glmnet~",paste(colnames(bolasso.x),collapse="+"),collapse=""))
   }
-  bolasso.est <- glm(formula.dnehm,family="binomial",data=data.for.dnehm,x=T,y=T)
+  bolasso.est <- glm(formula.neha,family="binomial",data=data.for.neha,x=T,y=T)
 
-  return(list(bolasso.est,a))
+  return(list(neha.estimate = bolasso.est,a.estimate=a,formula.neha=formula.neha,data.for.neha=data.for.neha))
 }
 
 
 
 
-#' A function to estimate DNEHM parameters via adaptive lasso. This is used internally by adalasso.dnehm.
-#' @import glmnet
-#' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
-#' @param A character string name of the variable that gives the node id
-#' @param time A character string name of the variable that gives the time, in integers
-#' @param event A character string name of the variable that gives the binary 0/1 indicator of event occurrence.
-#' @param A character string name of the variable that gives the cascade id
-#' @param threshold An integer such that an edge variable for node pair i/j will not be constructed if j did not experience more than 'threshold' events after i experienced them.
-#' @param covariates character vector of covariate names to include in the dnehm, excluding the intercept.
-#' @param a A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-exp(a)*(t-source_time)), where source_time is the time the sender experienced the event.
-# note1: this function does not currently permit dyadic covariates
-ada.dnehm <- function(data_for_dnehm,node,time,event,cascade,covariates,threshold=0,a=-8){
-  diffusion_effects_variables <- data_for_dnehm[,(length(covariates)+5):ncol(data_for_dnehm)]
-  diffusion_effects_variables <- (diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables))
-  if(length(covariates) == 0){
-    x_for_glmnet <- as.matrix(diffusion_effects_variables)
-    colnames(x_for_glmnet) <- colnames(diffusion_effects_variables)
-  }
-  if(length(covariates) > 0){
-    covariate_variables <- cbind(data_for_dnehm[,covariates])
-    x_for_glmnet <- cbind(as.matrix(covariate_variables),as.matrix(diffusion_effects_variables))
-    colnames(x_for_glmnet) <- c(covariates,colnames(diffusion_effects_variables))
-  }
-
-  y_for_glmnet <- data_for_dnehm[,event]
-
-  penalty.factors <- c(rep(0,length(covariates)),rep(1,ncol(diffusion_effects_variables)))
-
-  lower.vals <- c(rep(-Inf,length(covariates)),rep(0,ncol(diffusion_effects_variables)))
-
-
-  ridge_estimate <- glmnet::cv.glmnet(x_for_glmnet,y_for_glmnet,family="binomial",penalty.factor=penalty.factors,lower.limits=lower.vals,nfolds=10,alpha=0,nlambda=100)
-
-  best_ridge_coef <- as.numeric(coef(ridge_estimate, s = ridge_estimate$lambda.min))[-1]
-
-  penalty.factors <- 1/abs(best_ridge_coef)^2
-
-  penalty.factors[1:length(covariates)] <- 0
-
-  dnehm_estimate <- glmnet::cv.glmnet(x_for_glmnet,y_for_glmnet,family="binomial",penalty.factor=penalty.factors,lower.limits=lower.vals,nfolds=10,alpha=1,nlambda=100)
-
-  dnehm_estimate
-
-}
-
-
-
-
-
-#' A function for DNEHM estimation with adaptive lasso variable selection.
-#'
-#' @import doParallel
-#' @import parallel
-#' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
-#' @param node A character string name of the variable that gives the node id
-#' @param time A character string name of the variable that gives the time, in integers
-#' @param event A character string name of the variable that gives the binary 0/1 indicator of event occurrence.
-#' @param cascade A character string name of the variable that gives the cascade id
-#' @param covariates character vector of covariate names to include in the dnehm, excluding the intercept.
-#' @param a A non-negative numeric value that models the exponential decay of sender influence. The effect of a previous event experienced by a diffusion tie sender on the log odds of an event at time t is gamma*exp(-exp(a)*(t-source_time)), where source_time is the time the sender experienced the event.
-#' @param estimate.a A logical value indicating whether or not to estimate the value of 'a'.
-#' @param n_jobs Integer, number of jobs to run in parallel. -1 means using all processors.
-#'
-#' @references Bach, Francis R. "Bolasso: model consistent lasso estimation through the bootstrap." In Proceedings of the 25th international conference on Machine learning, pp. 33-40. ACM, 2008.
-#' @return A glm object giving the logistic regression estimates of the effects of the covariates and the edge variables selected by bolasso on 'event'. The edge variable 'e[i]_[j]' indicates that i sends a diffusion tie to j.
-#' @examples
-#' \dontrun{
-#' # Simulation study of the precision and recall of DNEHM
-#' # basic data parameters
-#' cascades <- 100
-#' nodes <- 10
-#' times <- 20
-#' nties <- 25
-#'
-#' # generate dataframe
-#' time <- sort(rep(1:times,nodes))
-#' node <- as.character(rep(1:nodes,times))
-#' intercept <- rep(1,length(time))
-#' covariate <- runif(length(time))-2
-#' data_for_sim <- data.frame(time,node,intercept,covariate,stringsAsFactors=F)
-#'
-#' # regression parameters
-#' beta <- cbind(c(-2,.25))
-#' rownames(beta) <- c("intercept","covariate")
-
-#' # generate network effects
-#' possible_ties <- rbind(t(combn(1:nodes,2)),t(combn(1:nodes,2))[,c(2,1)])
-#' possible_ties <- paste(possible_ties[,1],possible_ties[,2],sep="_")
-#' ties <- sample(possible_ties,nties)
-#' gamma <- cbind(exp(rnorm(nties)/2))
-#' rownames(gamma) <- ties
-
-#' # initiate simulated data object
-#' simulated_data <- NULL
-
-#' # generate the data one cascade at a time
-#' for(c in 1:cascades){
-#'   simulated_cascade <- simulate_dnehm_discrete(x=data_for_sim,node="node",time="time",beta=beta,gamma=gamma,a=-8)
-#'   simulated_cascade <- data.frame(simulated_cascade,cascade=c,stringsAsFactors=F)
-#'   simulated_data <- rbind(simulated_data,simulated_cascade)
-#' }
-#'
-#' adalasso.results <- adalasso.dnehm(simulated_data,node="node",time="time",event="event",cascade="cascade",covariates="covariate",a=-8)
-#'
-#' adalasso.coefs <- names(coef(adalasso.results[[1]]))[-(1:length(beta))]
-#' recall <- mean(is.element(paste('e',ties,sep=""),adalasso.coefs))
-#' precision <- mean(is.element(adalasso.coefs,paste('e',ties,sep="")))
-#' recall
-#' precision
-#' summary(adalasso.results[[1]])
-#' }
-#' @export
-adalasso.dnehm <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,estimate.a = T, n_jobs=1,data_only=F){
-
-  if(n_jobs == -1) n_jobs <- detectCores()
-
-  data_for_dnehm <- data_dnehm_discrete(eha_data,node=node,time=time,event=event,cascade=cascade,covariates=covariates)
-  if(data_only) return(data_for_dnehm)
-  diffusion_effects_variables <- data_for_dnehm[,(ncol(eha_data)+1):ncol(data_for_dnehm)]
-
-  if(length(covariates)==0){
-    x_for_glmnet <- cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))
-    colnames(x_for_glmnet) <- colnames(diffusion_effects_variables)
-  }
-
-  if(length(covariates) > 0){
-    covariate_variables <- cbind(eha_data[,covariates])
-    x_for_glmnet <- cbind(as.matrix(covariate_variables),as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))
-    colnames(x_for_glmnet) <- c(covariates,colnames(diffusion_effects_variables))
-  }
-
-  y_for_glmnet <- eha_data[,event]
-
-  a.likelihood <- function(a.par,diffusion_effects_variables,y){
-
-    x <- cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a.par)*(diffusion_effects_variables)))
-
-    x <- as.matrix(x)
-
-    logLik(glm(y~x,family="binomial"))
-  }
-
-  if(estimate.a){
-    find.a <- optim(a,a.likelihood,method="BFGS",control=list(fnscale=-1),diffusion_effects_variables=diffusion_effects_variables,y=y_for_glmnet)
-    a <- find.a$par
-  }
-
-  ada.dnehm_estimate <- ada.dnehm(data_for_dnehm = data_for_dnehm,
-                                  node = node,
-                                  time = time,
-                                  event = event,
-                                  covariates = covariates,
-                                  cascade = cascade,
-                                  threshold = threshold,
-                                  a = a)
-
-  betas <- ada.dnehm_estimate$glmnet.fit$beta
-  sel <- ada.dnehm_estimate$lambda == ada.dnehm_estimate$lambda.min
-  ada.dnehm.coef <- betas[, sel][betas[, sel] != 0]
-  coef_names <- names(ada.dnehm.coef)
-  not_sel <- c(1:(length(beta) - 1))
-  ada.recovered_edges <- substr(coef_names[-not_sel], 1,
-                                nchar(coef_names[-not_sel]))
-
-  adalasso.eff <- ada.recovered_edges
-
-
-  colnames(diffusion_effects_variables) <- substr(colnames(diffusion_effects_variables),1,nchar(colnames(diffusion_effects_variables)))
-
-  #print(adalasso.eff)
-  #print(colnames(diffusion_effects_variables))
-
-  adalasso.eff <- adalasso.eff[is.element(adalasso.eff,colnames(diffusion_effects_variables))]
-
-  adalasso.x <- cbind(cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))[,match(adalasso.eff,colnames(diffusion_effects_variables))])
-  colnames(adalasso.x) <- adalasso.eff
-  if(length(covariates) == 0){
-    adalasso.x <- adalasso.x
-    colnames(adalasso.x) <- switch((length(adalasso.eff)>0) + 1,NULL,paste("e",substr(adalasso.eff,2,nchar(adalasso.eff)),sep=""))
-  }
-  if(length(covariates) > 0){
-    adalasso.x <- cbind(covariate_variables,adalasso.x)
-    colnames(adalasso.x) <- c(covariates,switch((length(adalasso.eff)>0) + 1,NULL,paste("e",substr(adalasso.eff,2,nchar(adalasso.eff)),sep="")))
-  }
-  data.for.dnehm <- data.frame(y_for_glmnet,adalasso.x)
-  names(data.for.dnehm) <- c("y_for_glmnet",colnames(adalasso.x))
-  if(length(colnames(adalasso.x)) ==0) formula.dnehm <- as.formula("y_for_glmnet~1")
-  if(length(colnames(adalasso.x)) > 0){
-    formula.dnehm <- as.formula(paste("y_for_glmnet~",paste(colnames(adalasso.x),collapse="+"),collapse=""))
-  }
-  adalasso.est <- glm(formula.dnehm,family="binomial",data=data.for.dnehm,x=T,y=T)
-
-  return(list(adalasso.est,a))
-}
