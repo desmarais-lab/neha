@@ -269,8 +269,7 @@ bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,e
    #step_res <- stepAIC(lm_res,direction="backward")
    #stepres_form <- step_res$call$formula
    #diffusion_x_a <- labels(terms(stepres_form))
-   #diffusion_x_a <- diffusion_effects_variables[,vars.to.keep]
-   diffusion_x_a <- diffusion_effects_variables
+   diffusion_x_a <- diffusion_effects_variables[,vars.to.keep]
    find.a <- optim(a,a.likelihood,method="BFGS",control=list(fnscale=-1),diffusion_effects_variables=diffusion_x_a,y=y_for_glmnet)
    a <- find.a$par
    print("a estimation complete")
