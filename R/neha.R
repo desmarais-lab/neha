@@ -209,10 +209,10 @@ neha <- function(data_for_neha,node,time,event,cascade,covariates,threshold=0,a=
 #' }
 #' @export
 bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,estimate.a = T, n_jobs=1,data_only=F){
-		
+
   # find out if node is numeric
   n1c <- substr(as.character(eha_data[,node]),1,1)
-  
+
   if(!all(is.element(tolower(n1c),letters))){
   	print("appending n_ to beginning of all node id's since at least one seems numeric")
   	eha_data[,node] <- paste("n_",eha_data[,node],sep="")
@@ -260,7 +260,18 @@ bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,e
   }
 
   if(estimate.a){
-   find.a <- optim(a,a.likelihood,method="BFGS",control=list(fnscale=-1),diffusion_effects_variables=diffusion_effects_variables,y=y_for_glmnet)
+   x_for_a <- cbind(as.matrix(diffusion_effects_variables>0)*exp(-exp(a)*(diffusion_effects_variables)))
+   step_data <- data.frame(y_for_glmnet,x_for_a)
+   step_form <- paste("y_for_glmnet~",paste(colnames(x_for_a),collapse="+"))
+   step_form <- as.formula(step_form)
+   lm_res <- lm(step_form,data=step_data)
+   vars.to.keep <- which(coef(lm_res)[-1] > 0)
+   #step_res <- stepAIC(lm_res,direction="backward")
+   #stepres_form <- step_res$call$formula
+   #diffusion_x_a <- labels(terms(stepres_form))
+   #diffusion_x_a <- diffusion_effects_variables[,vars.to.keep]
+   diffusion_x_a <- diffusion_effects_variables
+   find.a <- optim(a,a.likelihood,method="BFGS",control=list(fnscale=-1),diffusion_effects_variables=diffusion_x_a,y=y_for_glmnet)
    a <- find.a$par
    print("a estimation complete")
   }
