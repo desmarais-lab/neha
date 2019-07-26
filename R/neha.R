@@ -265,13 +265,15 @@ bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,e
    step_form <- paste("y_for_glmnet~",paste(colnames(x_for_a),collapse="+"))
    step_form <- as.formula(step_form)
    lm_res <- lm(step_form,data=step_data)
-   vars.to.keep <- which(coef(lm_res)[-1] > 0)
+   vars.to.keep <- which(summary(lm_res)$coefficients[-1,"t value"] > 1.5)
    #step_res <- stepAIC(lm_res,direction="backward")
    #stepres_form <- step_res$call$formula
    #diffusion_x_a <- labels(terms(stepres_form))
-   diffusion_x_a <- diffusion_effects_variables[,vars.to.keep]
+   if(length(vars.to.keep) > 0){
+   diffusion_x_a <- cbind(diffusion_effects_variables[,vars.to.keep])
    find.a <- optim(a,a.likelihood,method="BFGS",control=list(fnscale=-1),diffusion_effects_variables=diffusion_x_a,y=y_for_glmnet)
    a <- find.a$par
+   }
    print("a estimation complete")
   }
 
