@@ -271,8 +271,8 @@ bolasso.neha <- function(eha_data,node,time,event,cascade,covariates=NULL,a=-8,e
    #diffusion_x_a <- labels(terms(stepres_form))
    if(length(vars.to.keep) > 0){
    diffusion_x_a <- cbind(diffusion_effects_variables[,vars.to.keep])
-   find.a <- optim(a,a.likelihood,method="BFGS",control=list(fnscale=-1),diffusion_effects_variables=diffusion_x_a,y=y_for_glmnet)
-   a <- find.a$par
+   find.a <- try(optim(a,a.likelihood,method="BFGS",control=list(fnscale=-1),diffusion_effects_variables=diffusion_x_a,y=y_for_glmnet))
+   if(class(find.a) != "try-error") a <- find.a$par
    }
    print("a estimation complete")
   }
