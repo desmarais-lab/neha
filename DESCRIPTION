@@ -12,4 +12,8 @@ LazyData: true
 RoxygenNote: 7.0.2
 Imports: combinat,
     glmnet,
-    doParallel
+    doParallel,
+    boot,
+    foreach,
+    glmulti,
+    parallel

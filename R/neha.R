@@ -140,7 +140,7 @@ estimate_a <- function(dv,edges){
 
 
 
-#' @import boot
+#' @import boot foreach doParallel parallel
 update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_vars,ncore=2){
 
   multa <- c(1.1,1.05,0.95,0.9)
@@ -220,7 +220,7 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 
 
 #' A function to select edges and prepare data for NEHA estimation
-#' @import glmnet
+#' @import doParallel foreach glmulti parallel
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param node A character string name of the variable that gives the node id
 #' @param time A character string name of the variable that gives the time, in integers
@@ -228,7 +228,6 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 #' @param cascade A character string name of the variable that gives the cascade id
 #' @param covariates character vector of covariate names to include in the neha, excluding the intercept.
 #' @param ncore an integer giving the number of cores to use in parallel computation.
-#' @import doParallel foreach glmulti
 #' @examples
 #' library(neha)
 
@@ -317,9 +316,15 @@ neha <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
       data_with_aest <- new_a[[2]]
     }
 
+    off <- rep(0,nrow(data_with_aest))
+
+    if(length(covariates) > 0){
+
     full_estimate <- glm(data_with_aest[,event] ~ as.matrix(data_with_aest[,effect_names]),family=binomial)
 
     off <- as.matrix(data_with_aest[,covariates])%*%(coef(full_estimate)[2:(length(covariates)+1)])
+
+    }
 
     data_with_aest$off <- off
 
