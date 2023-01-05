@@ -39,7 +39,7 @@ A function to select edges and prepare data for NEHA estimation
 \examples{
 library(neha)
 ## Not run:
-# Simulation study of the precision and recall of NEHA
+# Simulate data for NEHA
 # basic data parameters
 cascades <- 50
 nodes <- 20

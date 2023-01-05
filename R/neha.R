@@ -243,7 +243,7 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 #' library(neha)
 
 #' ## Not run:
-#' # Simulation study of the precision and recall of NEHA
+#' # Simulate data for NEHA
 #' # basic data parameters
 #' cascades <- 50
 #' nodes <- 20
