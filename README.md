@@ -2,8 +2,7 @@
 
 An R package which implements network event history analysis (NEHA).
 
-* Jeffrey J. Harden, Bruce A. Desmarais, Mark Brockway, Frederick J. Boehmke, Scott J. LaCombe, Fridolin Linder, and Hanna Wallach. 
-* A Diffusion Network Event History Estimator. The Journal of Politics, Forthcoming
+* Jeffrey J. Harden, Bruce A. Desmarais, Mark Brockway, Frederick J. Boehmke, Scott J. LaCombe, Fridolin Linder, and Hanna Wallach. A Diffusion Network Event History Estimator. The Journal of Politics, Forthcoming
 
 ## Installation
 
