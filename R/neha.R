@@ -284,6 +284,8 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 #' # estimate NEHA logistic regression
 #' neha_estimate <- glm(neha_results$combined_formula,data=neha_results$data_for_neha,family=binomial)
 #' summary(neha_estimate)
+#'
+#'
 #' @export
 neha <- function(eha_data,node,time,event,cascade,covariates,
                  ncore=2, negative=F){

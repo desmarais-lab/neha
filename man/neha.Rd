@@ -79,4 +79,6 @@ neha_results <- neha(simulated_data,node="node",time="time",event="event",cascad
 # estimate NEHA logistic regression
 neha_estimate <- glm(neha_results$combined_formula,data=neha_results$data_for_neha,family=binomial)
 summary(neha_estimate)
+
+
 }
