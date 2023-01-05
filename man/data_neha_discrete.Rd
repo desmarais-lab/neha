@@ -18,7 +18,7 @@ data_neha_discrete(eha_data, node, time, event, cascade, covariates)
 \item{cascade}{A character string name of the variable that gives the cascade id}
 }
 \value{
-A data frame in which, in addition to all of the variables in 'eha_data', there is one column for each directed dyad that meets the 'threshold' condition, named 'i_j' in which the value indicates the number of time points before 'time' that 'i' experienced the event in the respective 'cascade'. If 'i' did not experience the cascade before 'time', the value is 0.
+A data frame in which, in addition to all of the variables in 'eha_data', there is one column for each directed dyad, named 'i_j', where 'i' and 'j' are node ids, in which the value indicates the number of time points before 'time' that 'i' experienced the event in the respective 'cascade'. If 'i' did not experience the cascade before 'time', the value is 0.
 }
 \description{
 A function to create data for NEHA with discrete time EHA data

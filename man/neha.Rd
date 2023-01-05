@@ -4,7 +4,7 @@
 \alias{neha}
 \title{A function to select edges and prepare data for NEHA estimation}
 \usage{
-neha(eha_data, node, time, event, cascade, covariates, ncore = 2)
+neha(eha_data, node, time, event, cascade, covariates, ncore = 2, negative = F)
 }
 \arguments{
 \item{eha_data}{A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.}
@@ -20,6 +20,18 @@ neha(eha_data, node, time, event, cascade, covariates, ncore = 2)
 \item{covariates}{character vector of covariate names to include in the neha, excluding the intercept.}
 
 \item{ncore}{an integer giving the number of cores to use in parallel computation.}
+
+\item{negative}{logical, experimental indicating whether to go thorugh a phase of negative tie inference}
+}
+\value{
+A list with five elements.
+\itemize{
+  \item a_est - The estimated value of alpha, the edge effect decay parameter.
+  \item edges - A character vector giving the names of the edges inferred 'sender_receiver'.
+  \item data_for_neha - A dataframe that can be used to find the NEHA estimates using a function for logistic regression.
+  \item combined_formula - NEHA formula to use if you want a single gamma estimate.
+  \item separate_formula - NEHA formula to use if you want a separate gamma estimate for each edge.
+}
 }
 \description{
 A function to select edges and prepare data for NEHA estimation

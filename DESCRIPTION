@@ -1,19 +1,14 @@
 Package: neha
 Type: Package
-Title: What the Package Does (Title Case)
+Title: A package for network event history analysis.
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Bruce Desmarais
+Maintainer: Bruce Desmarais <bdesmarais@psu.edu>
+Description: This package includes functions to format data for use in networkevent history analysis (NEHA), to run NEHA, and to simulate data from a specified NEHA model.
+License: GPL2
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.0.2
-Imports: combinat,
-    glmnet,
-    doParallel,
+RoxygenNote: 7.2.1
+Imports: 
     boot,
-    foreach,
-    glmulti,
-    parallel
+    glmulti

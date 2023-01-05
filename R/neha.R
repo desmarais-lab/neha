@@ -5,7 +5,7 @@
 #' @param time A character string name of the variable that gives the time, in integers.
 #' @param event A character string name of the variable that gives the binary 0/1 indicator of event occurrence.
 #' @param cascade A character string name of the variable that gives the cascade id
-#' @return A data frame in which, in addition to all of the variables in 'eha_data', there is one column for each directed dyad that meets the 'threshold' condition, named 'i_j' in which the value indicates the number of time points before 'time' that 'i' experienced the event in the respective 'cascade'. If 'i' did not experience the cascade before 'time', the value is 0.
+#' @return A data frame in which, in addition to all of the variables in 'eha_data', there is one column for each directed dyad, named 'i_j', where 'i' and 'j' are node ids, in which the value indicates the number of time points before 'time' that 'i' experienced the event in the respective 'cascade'. If 'i' did not experience the cascade before 'time', the value is 0.
 #' @export
 data_neha_discrete <- function(eha_data,node,time,event,cascade,covariates){
 
@@ -158,6 +158,8 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
 
     glm.est <- glm(form,family=binomial,data=data_with_aest)
 
+    set.seed(9202011)
+
     cv.glm(data_with_aest,glm.est,hol,10)$delta[2]
 
   }
@@ -188,7 +190,7 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
 
 
 #' A function to estimate NEHA parameters using greedy edge addition
-#' @import glmnet fastglm foreach doParallel
+#' @import foreach doParallel parallel
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param A character string name of the variable that gives the node id
 #' @param time A character string name of the variable that gives the time, in integers
@@ -228,6 +230,15 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 #' @param cascade A character string name of the variable that gives the cascade id
 #' @param covariates character vector of covariate names to include in the neha, excluding the intercept.
 #' @param ncore an integer giving the number of cores to use in parallel computation.
+#' @param negative logical, experimental indicating whether to go thorugh a phase of negative tie inference
+#' @return A list with five elements.
+#' \itemize{
+#'   \item a_est - The estimated value of alpha, the edge effect decay parameter.
+#'   \item edges - A character vector giving the names of the edges inferred 'sender_receiver'.
+#'   \item data_for_neha - A dataframe that can be used to find the NEHA estimates using a function for logistic regression.
+#'   \item combined_formula - NEHA formula to use if you want a single gamma estimate.
+#'   \item separate_formula - NEHA formula to use if you want a separate gamma estimate for each edge.
+#' }
 #' @examples
 #' library(neha)
 
@@ -270,7 +281,8 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 #' # estimate NEHA
 #' neha_results <- neha(simulated_data,node="node",time="time",event="event",cascade="cascade",covariates="covariate",ncore=3)
 #' @export
-neha <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
+neha <- function(eha_data,node,time,event,cascade,covariates,
+                 ncore=2, negative=F){
 
   data_with_aest <- neha:::neha_geta(eha_data,node=node,time=time,event=event,cascade=cascade,covariates=covariates,ncore=ncore)
 
@@ -403,8 +415,121 @@ neha <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 
   edges_inferred <- edges_subset
 
+  if(negative){
+
+    edges_subset_pos <- edges_subset
+
+    edges_subset <-NULL
+
+    converged <- F
+
+    iteration <- 1
+
+    while(!converged){
+
+      old_edges <- edges_subset
+
+      effect_names <- c(covariates,edges_subset,edges_subset_pos)
+
+      off <- rep(0,nrow(data_with_aest))
+
+      if(length(covariates) > 0){
+
+        full_estimate <- glm(data_with_aest[,event] ~ as.matrix(data_with_aest[,effect_names]),family=binomial)
+
+        off <- as.matrix(data_with_aest[,covariates])%*%(coef(full_estimate)[2:(length(covariates)+1)])
+
+      }
+
+      data_with_aest$off <- off
+
+      cl <- makeCluster(ncore)
+      registerDoParallel(cl)
+
+      edges_subset <- foreach(reciever = unodes,.packages=c("glmulti")) %dopar% {
+
+        edger <- do.call('rbind',strsplit(names(within_r_corr),"_"))[,2]
+
+        corr_r <- within_r_corr[which(edger==reciever)]
+
+        corr_r <- corr_r[which(corr_r < 0)]
+        if(length(corr_r) > 10) corr_r <- corr_r[order(corr_r)[1:10]]
+        screenedr <- names(corr_r)
+        if(length(screenedr)>0){
+          #Xyr <- data_with_aest[which(data_with_aest[,node]==reciever),c(screenedr,event)]
+          Xyr <- data_with_aest[,c(screenedr,event)]
+          names(Xyr)[ncol(Xyr)] <- "y"
+          offr <- off[which(data_with_aest[,node]==reciever)]
+
+          sdxy <- apply(Xyr,2,sd)
+
+          Xyr <- Xyr[,which(sdxy > 0)]
+
+          increased <- T
+
+          est0 <- glm(Xyr[,"y"]~1,family=binomial)
+
+          BICfit <- BIC(est0)
+
+          vars <- 1
+          res.best.logistic <- NULL
+          while(increased){
+
+            res.best.logistic.v <-
+              glmulti(y="y",xr=names(Xyr)[-ncol(Xyr)], data = Xyr,
+                      level = 1,               # No interaction considered
+                      method = "h",            # Exhaustive approach
+                      crit = "bic",            # AIC as criteria
+                      confsetsize = 1,         # Keep 5 best models
+                      plotty = F, report = F,  # No plot or interim reports
+                      fitfunction = "glm",     # glm function
+                      maxsize = vars,
+                      minsize = ifelse(vars==1,0,vars),
+                      family = binomial,offset=off)
+            BICvars <- BIC(attributes(res.best.logistic.v)$objects[[1]])
+            increased <- BICvars < BICfit
+
+            if(increased){
+              res.best.logistic <- res.best.logistic.v
+              BICfit <- BICvars
+              vars <- vars + 1
+            }
+
+          }
+
+
+          best_vars <- names(coef(res.best.logistic))
+
+          best_edges <- best_vars[which(is.element(best_vars,screenedr))]
+
+          best_edges
+
+        }
+
+      }
+
+      stopCluster(cl)
+
+      edges_subset <- unique(c(unlist(edges_subset)))
+
+      converged <- all(is.element(edges_subset,old_edges)) & all(is.element(old_edges,edges_subset))
+
+    }
+
+    edges_inferred <- c(edges_subset_pos,edges_subset)
+
+  }
+
+  edge_cols <- data_with_aest[,edges_inferred]
+  edges_combined <- apply(edge_cols,1,sum)
+  edge_dat <- data.frame(edge_cols,edges_combined)
+  data_for_neha <- data.frame(data_with_aest[,c(node,time,event,cascade,covariates)],edge_dat)
+  combined_formula <- as.formula(paste(event,"~",paste(c(covariates,"edges_combined",collapse="+"))))
+  separate_formula <- as.formula(paste(event,"~",paste(c(covariates,edges_inferred,collapse="+"))))
+
+
   # results
-  list(a_est = a_est,edges=edges_inferred,data_for_neha = data_with_aest)
+  list(a_est = a_est,edges=edges_inferred,data_for_neha = data_for_neha,combined_formula=combined_formula,separate_formula=separate_formula)
 
 }
 
