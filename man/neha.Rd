@@ -73,6 +73,10 @@ for(c in 1:cascades){
   simulated_data <- rbind(simulated_data,simulated_cascade)
 }
 
-# estimate NEHA
+# infer edges
 neha_results <- neha(simulated_data,node="node",time="time",event="event",cascade="cascade",covariates="covariate",ncore=3)
+
+# estimate NEHA logistic regression
+neha_estimate <- glm(neha_results$combined_formula,data=neha_results$data_for_neha,family=binomial)
+summary(neha_estimate)
 }

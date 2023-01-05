@@ -278,8 +278,12 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 #'   simulated_data <- rbind(simulated_data,simulated_cascade)
 #' }
 #'
-#' # estimate NEHA
+#' # infer edges
 #' neha_results <- neha(simulated_data,node="node",time="time",event="event",cascade="cascade",covariates="covariate",ncore=3)
+#'
+#' # estimate NEHA logistic regression
+#' neha_estimate <- glm(neha_results$combined_formula,data=neha_results$data_for_neha,family=binomial)
+#' summary(neha_estimate)
 #' @export
 neha <- function(eha_data,node,time,event,cascade,covariates,
                  ncore=2, negative=F){
@@ -524,8 +528,8 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
   edges_combined <- apply(edge_cols,1,sum)
   edge_dat <- data.frame(edge_cols,edges_combined)
   data_for_neha <- data.frame(data_with_aest[,c(node,time,event,cascade,covariates)],edge_dat)
-  combined_formula <- as.formula(paste(event,"~",paste(c(covariates,"edges_combined",collapse="+"))))
-  separate_formula <- as.formula(paste(event,"~",paste(c(covariates,edges_inferred,collapse="+"))))
+  combined_formula <- as.formula(paste(event,"~",paste(c(covariates,"edges_combined"),collapse="+"),sep=""))
+  separate_formula <- as.formula(paste(event,"~",paste(c(covariates,edges_inferred),collapse="+"),sep=""))
 
 
   # results
