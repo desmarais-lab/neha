@@ -272,7 +272,7 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 neha <- function(eha_data,node,time,event,cascade,covariates,
                  ncore=2, negative=F){
 
-  data_with_aest <- neha:::neha_geta(eha_data,node=node,time=time,event=event,cascade=cascade,covariates=covariates,ncore=ncore)
+  data_with_aest <- neha_geta(eha_data,node=node,time=time,event=event,cascade=cascade,covariates=covariates,ncore=ncore)
 
   a.estimate <- data_with_aest[[1]]
 
@@ -311,7 +311,7 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
     effect_names <- c(covariates,edges_subset)
 
     if(!is.null(edges_subset)){
-      new_a <- neha:::update_a(data_with_aest=data_with_aest,covariates=covariates,edges_subset=edges_subset,event=event,old_a=a_est,edge_vars=edge_vars,ncore=ncore)
+      new_a <- update_a(data_with_aest=data_with_aest,covariates=covariates,edges_subset=edges_subset,event=event,old_a=a_est,edge_vars=edge_vars,ncore=ncore)
       a_est <- new_a[[1]]
       data_with_aest <- new_a[[2]]
     }
