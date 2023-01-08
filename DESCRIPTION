@@ -1,6 +1,6 @@
 Package: neha
 Type: Package
-Title: A package for network event history analysis.
+Title: A package for network event history analysis
 Version: 0.1.0
 Author: Bruce Desmarais
 Maintainer: Bruce Desmarais <bdesmarais@psu.edu>
