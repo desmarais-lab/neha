@@ -155,6 +155,7 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
   cl <- makeCluster(ncore)
   registerDoParallel(cl)
 
+  a <- NULL
   cv_scores <- foreach(a =  multa,.packages=c("boot")) %dopar% {
     cvglm_a(a,data_with_aest,covariates,edges_subset,event)
   }
