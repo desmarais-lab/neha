@@ -242,7 +242,7 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 #' @examples
 #' library(neha)
 
-#' ## Not run:
+#' \dontrun{
 #' # Simulate data for NEHA
 #' # basic data parameters
 #' cascades <- 50
@@ -284,6 +284,7 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 #' # estimate NEHA logistic regression
 #' neha_estimate <- glm(neha_results$combined_formula,data=neha_results$data_for_neha,family=binomial)
 #' summary(neha_estimate)
+#' }
 #'
 #'
 #' @export

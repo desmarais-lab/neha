@@ -38,7 +38,7 @@ A function to select edges and prepare data for NEHA estimation
 }
 \examples{
 library(neha)
-## Not run:
+\dontrun{
 # Simulate data for NEHA
 # basic data parameters
 cascades <- 50
@@ -79,6 +79,7 @@ neha_results <- neha(simulated_data,node="node",time="time",event="event",cascad
 # estimate NEHA logistic regression
 neha_estimate <- glm(neha_results$combined_formula,data=neha_results$data_for_neha,family=binomial)
 summary(neha_estimate)
+}
 
 
 }
