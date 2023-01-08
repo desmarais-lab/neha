@@ -50,7 +50,7 @@ time <- sort(rep(1:times,nodes))
 node <- paste("n",as.character(rep(1:nodes,times)),sep="")
 intercept <- rep(1,length(time))
 covariate <- runif(length(time))-2
-data_for_sim <- data.frame(time,node,intercept,covariate,stringsAsFactors=F)
+data_for_sim <- data.frame(time,node,intercept,covariate,stringsAsFactors=FALSE)
 
 # regression parameters
 beta <- cbind(c(-2.5,.25))

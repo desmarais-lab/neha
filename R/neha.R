@@ -6,7 +6,7 @@
 #' @param cascade A character string name of the variable that gives the cascade id
 #' @return A data frame in which, in addition to all of the variables in 'eha_data', there is one column for each directed dyad, named 'i_j', where 'i' and 'j' are node ids, in which the value indicates the number of time points before 'time' that 'i' experienced the event in the respective 'cascade'. If 'i' did not experience the cascade before 'time', the value is 0.
 #' @export
-data_neha_discrete <- function(eha_data,node,time,event,cascade,covariates){
+data_neha_discrete <- function(eha_data, node, time, event, cascade){
 
   # find out if node is numeric
   n1c <- substr(as.character(eha_data[,node]),1,1)
@@ -177,12 +177,12 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
 #' A function to estimate NEHA parameters using greedy edge addition
 #' @import foreach doParallel parallel
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
-#' @param A character string name of the variable that gives the node id
+#' @param node A character string name of the variable that gives the node id
 #' @param time A character string name of the variable that gives the time, in integers
 #' @param event A character string name of the variable that gives the binary 0/1 indicator of event occurrence.
 #' @param cascade A character string name of the variable that gives the cascade id
 #' @param covariates character vector of covariate names to include in the neha, excluding the intercept.
-#' #' @param ncore integer indicating the number of cores to use in parallel computation.
+#' @param ncore integer indicating the number of cores to use in parallel computation.
 #' @export
 neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 

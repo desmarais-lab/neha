@@ -9,16 +9,17 @@ neha_geta(eha_data, node, time, event, cascade, covariates, ncore = 2)
 \arguments{
 \item{eha_data}{A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.}
 
+\item{node}{A character string name of the variable that gives the node id}
+
 \item{time}{A character string name of the variable that gives the time, in integers}
 
 \item{event}{A character string name of the variable that gives the binary 0/1 indicator of event occurrence.}
 
 \item{cascade}{A character string name of the variable that gives the cascade id}
 
-\item{covariates}{character vector of covariate names to include in the neha, excluding the intercept.
-#' @param ncore integer indicating the number of cores to use in parallel computation.}
+\item{covariates}{character vector of covariate names to include in the neha, excluding the intercept.}
 
-\item{A}{character string name of the variable that gives the node id}
+\item{ncore}{integer indicating the number of cores to use in parallel computation.}
 }
 \description{
 A function to estimate NEHA parameters using greedy edge addition
