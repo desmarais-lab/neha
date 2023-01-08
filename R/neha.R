@@ -175,7 +175,7 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
 
 
 #' A function to estimate NEHA parameters using greedy edge addition
-#' @import foreach doParallel parallel
+#' @import foreach doParallel parallel stats
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param node A character string name of the variable that gives the node id
 #' @param time A character string name of the variable that gives the time, in integers
