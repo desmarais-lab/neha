@@ -11,4 +11,10 @@ LazyData: true
 RoxygenNote: 7.2.1
 Imports: 
     boot,
-    glmulti
+    glmulti,
+    doParallel,
+    combinat,
+    foreach,
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
