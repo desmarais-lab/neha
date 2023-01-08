@@ -337,6 +337,7 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
     cl <- makeCluster(ncore)
     registerDoParallel(cl)
 
+    reciever <- NULL
     edges_subset <- foreach(reciever = unodes,.packages=c("glmulti")) %dopar% {
 
       edger <- do.call('rbind',strsplit(names(within_r_corr),"_"))[,2]
