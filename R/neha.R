@@ -181,12 +181,11 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
 #' @param time A character string name of the variable that gives the time, in integers
 #' @param event A character string name of the variable that gives the binary 0/1 indicator of event occurrence.
 #' @param cascade A character string name of the variable that gives the cascade id
-#' @param covariates character vector of covariate names to include in the neha, excluding the intercept.
 #' @param ncore integer indicating the number of cores to use in parallel computation.
 #' @export
-neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
+neha_geta <- function(eha_data, node, time, event, cascade, ncore=2){
 
-  data_for_neha <- data_neha_discrete(eha_data,node,time,event,cascade,covariates)
+  data_for_neha <- data_neha_discrete(eha_data, node, time, event, cascade)
 
   edge_vars <- names(data_for_neha)[which(!is.element(names(data_for_neha),names(eha_data)))]
 
@@ -272,7 +271,14 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 neha <- function(eha_data,node,time,event,cascade,covariates,
                  ncore=2, negative=F){
 
-  data_with_aest <- neha_geta(eha_data,node=node,time=time,event=event,cascade=cascade,covariates=covariates,ncore=ncore)
+  data_with_aest <- neha_geta(
+    eha_data,
+    node=node,
+    time=time,
+    event=event,
+    cascade=cascade,
+    ncore=ncore
+  )
 
   a.estimate <- data_with_aest[[1]]
 
