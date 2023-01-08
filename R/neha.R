@@ -1,4 +1,3 @@
-
 #' A function to create data for NEHA with discrete time EHA data
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param node A character string name of the variable that gives the node id.
@@ -16,7 +15,6 @@ data_neha_discrete <- function(eha_data,node,time,event,cascade,covariates){
   	print("appending n_ to beginning of all node id's since at least one seems numeric")
   	eha_data[,node] <- paste("n_",eha_data[,node],sep="")
   }
-
 
   # extract node ids
   node <- eha_data[,node]
@@ -60,7 +58,6 @@ data_neha_discrete <- function(eha_data,node,time,event,cascade,covariates){
   diff_var_mat <- diff_var_mat[,which(cor_e_x != 0)]
   data.frame(eha_data,diff_var_mat,stringsAsFactors=F)
 }
-
 
 
 #' A function to simulate a single cascade from the discrete-time logistic specification NEHA data generating process.
@@ -110,14 +107,6 @@ simulate_neha_discrete <- function(x,node,time,beta,gamma,a=-8){
 }
 
 
-
-
-
-
-
-
-
-
 estimate_a <- function(dv,edges){
 
   one_times <- c(unlist(edges[which(dv==1),]))
@@ -137,7 +126,6 @@ estimate_a <- function(dv,edges){
   list(a,edges)
 
 }
-
 
 
 #' @import boot foreach doParallel parallel
@@ -186,9 +174,6 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
 }
 
 
-
-
-
 #' A function to estimate NEHA parameters using greedy edge addition
 #' @import foreach doParallel parallel
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
@@ -215,10 +200,6 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
   list(a_est = a.estimate[[1]],data_for_neha)
 
 }
-
-
-
-
 
 
 #' A function to select edges and prepare data for NEHA estimation
@@ -255,7 +236,7 @@ neha_geta <- function(eha_data,node,time,event,cascade,covariates,ncore=2){
 #' node <- paste("n",as.character(rep(1:nodes,times)),sep="")
 #' intercept <- rep(1,length(time))
 #' covariate <- runif(length(time))-2
-#' data_for_sim <- data.frame(time,node,intercept,covariate,stringsAsFactors=F)
+#' data_for_sim <- data.frame(time,node,intercept,covariate,stringsAsFactors=FALSE)
 #'
 #' # regression parameters
 #' beta <- cbind(c(-2.5,.25))
@@ -401,7 +382,6 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
 
         }
 
-
         best_vars <- names(coef(res.best.logistic))
 
         best_edges <- best_vars[which(is.element(best_vars,screenedr))]
@@ -539,8 +519,3 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
   list(a_est = a_est,edges=edges_inferred,data_for_neha = data_for_neha,combined_formula=combined_formula,separate_formula=separate_formula)
 
 }
-
-
-
-
-
