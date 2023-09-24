@@ -25,35 +25,35 @@ library(neha)
 cascades <- 50
 nodes <- 20
 times <- 30
- nties <- 25
- # generate dataframe
- time <- sort(rep(1:times,nodes))
- node <- paste("n",as.character(rep(1:nodes,times)),sep="")
- intercept <- rep(1,length(time))
- covariate <- runif(length(time))-2
- data_for_sim <- data.frame(
-   time, node, intercept, covariate, stringsAsFactors = FALSE
- )
+nties <- 25
+# generate dataframe
+time <- sort(rep(1:times,nodes))
+node <- paste("n",as.character(rep(1:nodes,times)),sep="")
+intercept <- rep(1,length(time))
+covariate <- runif(length(time))-2
+data_for_sim <- data.frame(
+  time, node, intercept, covariate, stringsAsFactors = FALSE
+)
 ```
 
 ```{r}
- # regression parameters
- beta <- cbind(c(-2.5,.25))
- rownames(beta) <- c("intercept","covariate")
+# regression parameters
+beta <- cbind(c(-2.5,.25))
+rownames(beta) <- c("intercept","covariate")
 
- # generate network effects
- possible_ties <- rbind(t(combn(1:nodes,2)),t(combn(1:nodes,2))[,c(2,1)])
- possible_ties <- paste(
-   paste("n",possible_ties[,1],sep=""),
-   paste("n",possible_ties[,2],sep=""),
-   sep="_"
- )
- ties <- sample(possible_ties,nties)
- gamma <- cbind(rep(1.5,length(ties)))
- rownames(gamma) <- ties
+# generate network effects
+possible_ties <- rbind(t(combn(1:nodes,2)),t(combn(1:nodes,2))[,c(2,1)])
+possible_ties <- paste(
+    paste("n",possible_ties[,1],sep=""),
+    paste("n",possible_ties[,2],sep=""),
+    sep="_"
+)
+ties <- sample(possible_ties,nties)
+gamma <- cbind(rep(1.5,length(ties)))
+rownames(gamma) <- ties
 
- # initiate simulated data object
- simulated_data <- NULL
+# initiate simulated data object
+simulated_data <- NULL
 
  # generate the data one cascade at a time
 for(c in 1:cascades) {
@@ -76,20 +76,20 @@ for(c in 1:cascades) {
 # infer edges
 neha_results <- neha(
     simulated_data,
-    node = "node",
-    time = "time",
-    event = "event",
-    cascade = "cascade",
-    covariates = "covariate",
-    ncore = 3
+    node="node",
+    time="time",
+    event="event",
+    cascade="cascade",
+    covariates="covariate",
+    ncore=1
  )
 
- # estimate NEHA logistic regression
- neha_estimate <- glm(
-     neha_results$combined_formula,
-     data = neha_results$data_for_neha,
-     family = binomial
+# estimate NEHA logistic regression
+neha_estimate <- glm(
+    neha_results$combined_formula,
+    data=neha_results$data_for_neha,
+    family=binomial
 )
  
- summary(neha_estimate)
- ```
+summary(neha_estimate)
+```
