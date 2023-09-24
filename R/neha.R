@@ -127,7 +127,7 @@ estimate_a <- function(dv,edges){
 }
 
 
-#' @import boot foreach doParallel parallel
+#' @import boot foreach doParallel parallel doRNG
 update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_vars,ncore=2){
 
   multa <- c(1.1,1.05,0.95,0.9)
@@ -155,7 +155,6 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
   registerDoParallel(cl)
 
   a <- NULL
-  require(doRNG)
   cv_scores <- foreach(a =  multa,.packages=c("boot"),
                        .options.RNG=9202011) %dorng% {
     cvglm_a(a,data_with_aest,covariates,edges_subset,event)
@@ -364,7 +363,6 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
     }
 
     data_with_aest$off <- off
-    require(doParallel)
     cl <- makeCluster(ncore)
     registerDoParallel(cl)
 
