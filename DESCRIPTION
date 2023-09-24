@@ -13,6 +13,7 @@ Imports:
     boot,
     glmulti,
     doParallel,
+    doRNG,
     combinat,
     foreach,
 Suggests: 

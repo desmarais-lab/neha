@@ -1,6 +1,6 @@
 #' A function to create data for NEHA with discrete time EHA data
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
-#' @param node A character string name of the variable that gives the node id.
+#' @param node A character string name of the variable that gives the node id. Node ids should be character type variables.
 #' @param time A character string name of the variable that gives the time, in integers.
 #' @param event A character string name of the variable that gives the binary 0/1 indicator of event occurrence.
 #' @param cascade A character string name of the variable that gives the cascade id
@@ -49,7 +49,6 @@ data_neha_discrete <- function(eha_data, node, time, event, cascade){
     }
 
   }
-  network_betas <- numeric(ncol(diff_var_mat))
 
   edge_sum <- apply(diff_var_mat,2,sum)
   diff_var_mat <- diff_var_mat[,which(edge_sum > 0)]
@@ -117,7 +116,7 @@ estimate_a <- function(dv,edges){
   #exp(-exp(a)*max_time)/exp(-exp(a)*min_time) = 0.5
   #-exp(a)*max_time+exp(a)*min_time = log(0.5)
   #exp(a) = log(0.5)/(min_time-max_time)
-  a = log(log(0.9)/(min_time-max_time))
+  a = log(log(0.9)/(ifelse(min_time==max_time,-.5,min_time-max_time)))
 
   for(i in 1:ncol(edges)){
     edges[,i] <- (edges[,i] > 0 )*exp(-exp(a)*edges[,i])
@@ -156,7 +155,9 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
   registerDoParallel(cl)
 
   a <- NULL
-  cv_scores <- foreach(a =  multa,.packages=c("boot")) %dopar% {
+  require(doRNG)
+  cv_scores <- foreach(a =  multa,.packages=c("boot"),
+                       .options.RNG=9202011) %dorng% {
     cvglm_a(a,data_with_aest,covariates,edges_subset,event)
   }
 
@@ -363,7 +364,7 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
     }
 
     data_with_aest$off <- off
-
+    require(doParallel)
     cl <- makeCluster(ncore)
     registerDoParallel(cl)
 
@@ -406,7 +407,7 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
                     plotty = F, report = F,  # No plot or interim reports
                     fitfunction = "glm",     # glm function
                     maxsize = vars,
-                    minsize = ifelse(vars==1,0,vars),
+                    minsize = ifelse(vars==1,0,min(c(vars,ncol(Xyr)-1))),
                     family = binomial,offset=off)
           BICvars <- BIC(attributes(res.best.logistic.v)$objects[[1]])
           increased <- BICvars < BICfit

@@ -9,7 +9,7 @@ data_neha_discrete(eha_data, node, time, event, cascade)
 \arguments{
 \item{eha_data}{A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.}
 
-\item{node}{A character string name of the variable that gives the node id.}
+\item{node}{A character string name of the variable that gives the node id. Node ids should be character type variables.}
 
 \item{time}{A character string name of the variable that gives the time, in integers.}
 
