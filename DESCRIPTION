@@ -4,7 +4,7 @@ Title: A package for network event history analysis
 Version: 0.1.0
 Authors@R: 
     c(
-        person("Bruce", "Desmarais", , "bdesmarais@psu.edu", role = c("aut", "cre"),
+        person("Bruce", "Desmarais", , "bdesmarais@psu.edu", role = c("aut", "cre","cph"),
                comment = c(ORCID = "0000-0002-3031-8883")),
         person("Fridolin", "Linder", , "fridolin.linder.public@gmail.com", role = c("ctb"),
                comment = c(ORCID = "0000-0002-0499-0676")) 
