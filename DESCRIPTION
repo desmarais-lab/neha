@@ -9,7 +9,7 @@ Authors@R:
         person("Fridolin", "Linder", , "fridolin.linder.public@gmail.com", role = c("ctb"),
                comment = c(ORCID = "0000-0002-0499-0676")) 
     )
-Description: This package includes functions to format data for use in networkevent history analysis (NEHA), to run NEHA, and to simulate data from a specified NEHA model.
+Description: This package includes functions to format data for use in network event history analysis (NEHA), to run NEHA, and to simulate data from a specified NEHA model.
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
