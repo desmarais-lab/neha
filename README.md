@@ -6,7 +6,11 @@ An R package which implements network event history analysis (NEHA).
 
 ## Installation
 
-The package can be installed from GitHub via devtools.
+The package can be installed from CRAN.
+
+    install.packages("neha")
+
+The latest development version can be installed from GitHub via devtools.
 
     install.packages("devtools")
     
