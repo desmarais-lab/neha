@@ -147,7 +147,8 @@ update_a <- function(data_with_aest,covariates,edges_subset,event,old_a,edge_var
 
     set.seed(9202011)
 
-    cv.glm(data_with_aest,glm.est,hol,10)$delta[2]
+    # cv.glm(data_with_aest,glm.est,hol,10)$delta[2]
+    logLik(glm.est)
 
   }
 
