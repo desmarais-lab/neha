@@ -302,261 +302,184 @@ neha_geta <- function(eha_data, node, time, event, cascade, ncore=2){
 neha <- function(eha_data,node,time,event,cascade,covariates,
                  ncore=2, negative=F){
 
-  data_with_aest <- neha_geta(
-    eha_data,
-    node=node,
-    time=time,
-    event=event,
-    cascade=cascade,
-    ncore=ncore
-  )
-
+  data_with_aest <- neha_geta(eha_data, node = node, time = time, 
+                              event = event, cascade = cascade, ncore = ncore)
   a.estimate <- data_with_aest[[1]]
-
   a_est <- a.estimate
-
   data_with_aest <- data_with_aest[[2]]
-
-  edge_vars <- names(data_with_aest)[which(!is.element(names(data_with_aest),names(eha_data)))]
-
+  edge_vars <- names(data_with_aest)[which(!is.element(names(data_with_aest), 
+                                                       names(eha_data)))]
   within_r_corr <- NULL
-  for(i in 1:length(edge_vars)){
-    ri <- strsplit(edge_vars[i],"_")[[1]][2]
-    xi <- data_with_aest[which(data_with_aest[,node]==ri), edge_vars[i]]
-    yi <- data_with_aest[which(data_with_aest[,node]==ri),event]
-    #within_r_corr <- c(within_r_corr, wilcox.test(as.numeric(xi[which(yi==0)]),as.numeric(xi[which(yi==1)]),alternative="greater")$p.value)
-    cor_ye <- suppressWarnings(cor(yi,data_with_aest[which(data_with_aest[,node]==ri), edge_vars]))
+  for (i in 1:length(edge_vars)) {
+    ri <- strsplit(edge_vars[i], "_")[[1]][2]
+    xi <- data_with_aest[which(data_with_aest[, node] == 
+                                 ri), edge_vars[i]]
+    yi <- data_with_aest[which(data_with_aest[, node] == 
+                                 ri), event]
+    cor_ye <- suppressWarnings(cor(yi, data_with_aest[which(data_with_aest[, 
+                                                                           node] == ri), edge_vars]))
     cor_ye <- cor_ye[which(!is.na(cor_ye))]
-    within_r_corr <- c(within_r_corr,(suppressWarnings(cor(yi,xi))-mean(cor_ye))/sd(cor_ye))
-
+    within_r_corr <- c(within_r_corr, (suppressWarnings(cor(yi, 
+                                                            xi)) - mean(cor_ye))/sd(cor_ye))
   }
-
   names(within_r_corr) <- edge_vars
-
-  unodes <- unique(data_with_aest[,node])
-
-  edges_subset <-NULL
-
+  unodes <- unique(data_with_aest[, node])
+  edges_subset <- NULL
   converged <- F
-
   iteration <- 1
-
-  while(!converged){
-
+  while (!converged) {
     old_edges <- edges_subset
-
-    effect_names <- c(covariates,edges_subset)
-
-    if(!is.null(edges_subset)){
-      new_a <- update_a(data_with_aest=data_with_aest,covariates=covariates,edges_subset=edges_subset,event=event,old_a=a_est,edge_vars=edge_vars,ncore=ncore)
+    effect_names <- c(covariates, edges_subset)
+    if (!is.null(edges_subset)) {
+      new_a <- update_a(data_with_aest = data_with_aest, 
+                        covariates = covariates, edges_subset = edges_subset, 
+                        event = event, old_a = a_est, edge_vars = edge_vars, 
+                        ncore = ncore)
       a_est <- new_a[[1]]
       data_with_aest <- new_a[[2]]
     }
-
-    off <- rep(0,nrow(data_with_aest))
-
-    if(length(covariates) > 0){
-
-    full_estimate <- glm(data_with_aest[,event] ~ as.matrix(data_with_aest[,effect_names]),family=binomial)
-    
-    off_coef <- coef(full_estimate)
-    off_coef[is.na(off_coef)] <- 0
-    off <- as.matrix(data_with_aest[, covariates]) %*% 
-      (off_coef[2:(length(covariates) + 
-                     1)])
-
+    off <- rep(0, nrow(data_with_aest))
+    if (length(covariates) > 0) {
+      full_estimate <- glm(data_with_aest[, event] ~ as.matrix(data_with_aest[, 
+                                                                              effect_names]), family = binomial)
+      off_coef <- coef(full_estimate)
+      off_coef[is.na(off_coef)] <- 0
+      off <- as.matrix(data_with_aest[, covariates]) %*% 
+        (off_coef[2:(length(covariates) + 
+                       1)])
     }
-
     data_with_aest$off <- off
     cl <- makeCluster(ncore)
     registerDoParallel(cl)
-
     reciever <- NULL
-    edges_subset <- foreach(reciever = unodes,.packages=c("glmulti"))  foreach::`%dopar%` {
-
-      edger <- do.call('rbind',strsplit(names(within_r_corr),"_"))[,2]
-
-      corr_r <- within_r_corr[which(edger==reciever)]
-
-      #corr_r <- corr_r[which(corr_r>1.96)]
-      if(length(corr_r) > 10) corr_r <- corr_r[order(-corr_r)[1:10]]
-      screenedr <- names(corr_r)
-      if(length(screenedr)>0){
-        #Xyr <- data_with_aest[which(data_with_aest[,node]==reciever),c(screenedr,event)]
-        Xyr <- data_with_aest[,c(screenedr,event)]
-        names(Xyr)[ncol(Xyr)] <- "y"
-        offr <- off[which(data_with_aest[,node]==reciever)]
-
-        sdxy <- apply(Xyr,2,sd)
-
-        Xyr <- Xyr[,which(sdxy > 0)]
-
-        increased <- T
-
-        est0 <- glm(Xyr[,"y"]~1,family=binomial)
-
-        BICfit <- BIC(est0)
-
-        vars <- 1
-        res.best.logistic <- NULL
-        while(increased){
-
-          res.best.logistic.v <-
-            glmulti(y="y",xr=names(Xyr)[-ncol(Xyr)], data = Xyr,
-                    level = 1,               # No interaction considered
-                    method = "h",            # Exhaustive approach
-                    crit = "bic",            # AIC as criteria
-                    confsetsize = 1,         # Keep 5 best models
-                    plotty = F, report = F,  # No plot or interim reports
-                    fitfunction = "glm",     # glm function
-                    maxsize = vars,
-                    minsize = ifelse(vars==1,0,min(c(vars,ncol(Xyr)-1))),
-                    family = binomial,offset=off)
-          BICvars <- BIC(attributes(res.best.logistic.v)$objects[[1]])
-          increased <- BICvars < BICfit
-
-          if(increased){
-            res.best.logistic <- res.best.logistic.v
-            BICfit <- BICvars
-            vars <- vars + 1
-          }
-
-        }
-
-        best_vars <- names(coef(res.best.logistic))
-
-        best_edges <- best_vars[which(is.element(best_vars,screenedr))]
-
-        best_edges
-
-      }
-
-    }
-
-    stopCluster(cl)
-
-    edges_subset <- unique(c(unlist(edges_subset)))
-
-    converged <- all(is.element(edges_subset,old_edges)) & all(is.element(old_edges,edges_subset))
-
-  }
-
-  edges_inferred <- edges_subset
-
-  if(negative){
-
-    edges_subset_pos <- edges_subset
-
-    edges_subset <-NULL
-
-    converged <- F
-
-    iteration <- 1
-
-    while(!converged){
-
-      old_edges <- edges_subset
-
-      effect_names <- c(covariates,edges_subset,edges_subset_pos)
-
-      off <- rep(0,nrow(data_with_aest))
-
-      if(length(covariates) > 0){
-
-        full_estimate <- glm(data_with_aest[,event] ~ as.matrix(data_with_aest[,effect_names]),family=binomial)
-
-        off <- as.matrix(data_with_aest[,covariates])%*%(coef(full_estimate)[2:(length(covariates)+1)])
-
-      }
-
-      data_with_aest$off <- off
-
-      cl <- makeCluster(ncore)
-      registerDoParallel(cl)
-
-      edges_subset <- foreach(reciever = unodes,.packages=c("glmulti")) %dopar% {
-
-        edger <- do.call('rbind',strsplit(names(within_r_corr),"_"))[,2]
-
-        corr_r <- within_r_corr[which(edger==reciever)]
-
-        corr_r <- corr_r[which(corr_r < 0)]
-        if(length(corr_r) > 10) corr_r <- corr_r[order(corr_r)[1:10]]
+    edges_subset <- foreach(reciever = unodes, .packages = c("glmulti")) %dopar% 
+      {
+        edger <- do.call("rbind", strsplit(names(within_r_corr), 
+                                           "_"))[, 2]
+        corr_r <- within_r_corr[which(edger == reciever)]
+        if (length(corr_r) > 10) 
+          corr_r <- corr_r[order(-corr_r)[1:10]]
         screenedr <- names(corr_r)
-        if(length(screenedr)>0){
-          #Xyr <- data_with_aest[which(data_with_aest[,node]==reciever),c(screenedr,event)]
-          Xyr <- data_with_aest[,c(screenedr,event)]
+        if (length(screenedr) > 0) {
+          Xyr <- data_with_aest[, c(screenedr, event)]
           names(Xyr)[ncol(Xyr)] <- "y"
-          offr <- off[which(data_with_aest[,node]==reciever)]
-
-          sdxy <- apply(Xyr,2,sd)
-
-          Xyr <- Xyr[,which(sdxy > 0)]
-
+          offr <- off[which(data_with_aest[, node] == 
+                              reciever)]
+          sdxy <- apply(Xyr, 2, sd)
+          Xyr <- Xyr[, which(sdxy > 0)]
           increased <- T
-
-          est0 <- glm(Xyr[,"y"]~1,family=binomial)
-
+          est0 <- glm(Xyr[, "y"] ~ 1, family = binomial)
           BICfit <- BIC(est0)
-
           vars <- 1
           res.best.logistic <- NULL
-          while(increased){
-
-            res.best.logistic.v <-
-              glmulti(y="y",xr=names(Xyr)[-ncol(Xyr)], data = Xyr,
-                      level = 1,               # No interaction considered
-                      method = "h",            # Exhaustive approach
-                      crit = "bic",            # AIC as criteria
-                      confsetsize = 1,         # Keep 5 best models
-                      plotty = F, report = F,  # No plot or interim reports
-                      fitfunction = "glm",     # glm function
-                      maxsize = vars,
-                      minsize = ifelse(vars==1,0,vars),
-                      family = binomial,offset=off)
+          while (increased) {
+            res.best.logistic.v <- glmulti(y = "y", xr = names(Xyr)[-ncol(Xyr)], 
+                                           data = Xyr, level = 1, method = "h", crit = "bic", 
+                                           confsetsize = 1, plotty = F, report = F, 
+                                           fitfunction = "glm", maxsize = vars, minsize = ifelse(vars == 
+                                                                                                   1, 0, min(c(vars, ncol(Xyr) - 1))), family = binomial, 
+                                           offset = off)
             BICvars <- BIC(attributes(res.best.logistic.v)$objects[[1]])
             increased <- BICvars < BICfit
-
-            if(increased){
+            if (increased) {
               res.best.logistic <- res.best.logistic.v
               BICfit <- BICvars
               vars <- vars + 1
             }
-
           }
-
-
           best_vars <- names(coef(res.best.logistic))
-
-          best_edges <- best_vars[which(is.element(best_vars,screenedr))]
-
+          best_edges <- best_vars[which(is.element(best_vars, 
+                                                   screenedr))]
           best_edges
-
         }
-
       }
-
-      stopCluster(cl)
-
-      edges_subset <- unique(c(unlist(edges_subset)))
-
-      converged <- all(is.element(edges_subset,old_edges)) & all(is.element(old_edges,edges_subset))
-
-    }
-
-    edges_inferred <- c(edges_subset_pos,edges_subset)
-
+    stopCluster(cl)
+    edges_subset <- unique(c(unlist(edges_subset)))
+    converged <- all(is.element(edges_subset, old_edges)) & 
+      all(is.element(old_edges, edges_subset))
   }
-
-  edge_cols <- data_with_aest[,edges_inferred]
-  edges_combined <- apply(edge_cols,1,sum)
-  edge_dat <- data.frame(edge_cols,edges_combined)
-  data_for_neha <- data.frame(data_with_aest[,c(node,time,event,cascade,covariates)],edge_dat)
-  combined_formula <- as.formula(paste(event,"~",paste(c(covariates,"edges_combined"),collapse="+"),sep=""))
-  separate_formula <- as.formula(paste(event,"~",paste(c(covariates,edges_inferred),collapse="+"),sep=""))
-
-
-  # results
-  list(a_est = a_est,edges=edges_inferred,data_for_neha = data_for_neha,combined_formula=combined_formula,separate_formula=separate_formula)
+  edges_inferred <- edges_subset
+  if (negative) {
+    edges_subset_pos <- edges_subset
+    edges_subset <- NULL
+    converged <- F
+    iteration <- 1
+    while (!converged) {
+      old_edges <- edges_subset
+      effect_names <- c(covariates, edges_subset, edges_subset_pos)
+      off <- rep(0, nrow(data_with_aest))
+      if (length(covariates) > 0) {
+        full_estimate <- glm(data_with_aest[, event] ~ 
+                               as.matrix(data_with_aest[, effect_names]), 
+                             family = binomial)
+        off <- as.matrix(data_with_aest[, covariates]) %*% 
+          (coef(full_estimate)[2:(length(covariates) + 
+                                    1)])
+      }
+      data_with_aest$off <- off
+      cl <- makeCluster(ncore)
+      registerDoParallel(cl)
+      edges_subset <- foreach(reciever = unodes, .packages = c("glmulti")) %dopar% 
+        {
+          edger <- do.call("rbind", strsplit(names(within_r_corr), 
+                                             "_"))[, 2]
+          corr_r <- within_r_corr[which(edger == reciever)]
+          corr_r <- corr_r[which(corr_r < 0)]
+          if (length(corr_r) > 10) 
+            corr_r <- corr_r[order(corr_r)[1:10]]
+          screenedr <- names(corr_r)
+          if (length(screenedr) > 0) {
+            Xyr <- data_with_aest[, c(screenedr, event)]
+            names(Xyr)[ncol(Xyr)] <- "y"
+            offr <- off[which(data_with_aest[, node] == 
+                                reciever)]
+            sdxy <- apply(Xyr, 2, sd)
+            Xyr <- Xyr[, which(sdxy > 0)]
+            increased <- T
+            est0 <- glm(Xyr[, "y"] ~ 1, family = binomial)
+            BICfit <- BIC(est0)
+            vars <- 1
+            res.best.logistic <- NULL
+            while (increased) {
+              res.best.logistic.v <- glmulti(y = "y", 
+                                             xr = names(Xyr)[-ncol(Xyr)], data = Xyr, 
+                                             level = 1, method = "h", crit = "bic", 
+                                             confsetsize = 1, plotty = F, report = F, 
+                                             fitfunction = "glm", maxsize = vars, 
+                                             minsize = ifelse(vars == 1, 0, vars), 
+                                             family = binomial, offset = off)
+              BICvars <- BIC(attributes(res.best.logistic.v)$objects[[1]])
+              increased <- BICvars < BICfit
+              if (increased) {
+                res.best.logistic <- res.best.logistic.v
+                BICfit <- BICvars
+                vars <- vars + 1
+              }
+            }
+            best_vars <- names(coef(res.best.logistic))
+            best_edges <- best_vars[which(is.element(best_vars, 
+                                                     screenedr))]
+            best_edges
+          }
+        }
+      stopCluster(cl)
+      edges_subset <- unique(c(unlist(edges_subset)))
+      converged <- all(is.element(edges_subset, old_edges)) & 
+        all(is.element(old_edges, edges_subset))
+    }
+    edges_inferred <- c(edges_subset_pos, edges_subset)
+  }
+  edge_cols <- data_with_aest[, edges_inferred]
+  edges_combined <- apply(edge_cols, 1, sum)
+  edge_dat <- data.frame(edge_cols, edges_combined)
+  data_for_neha <- data.frame(data_with_aest[, c(node, time, 
+                                                 event, cascade, covariates)], edge_dat)
+  combined_formula <- as.formula(paste(event, "~", paste(c(covariates, 
+                                                           "edges_combined"), collapse = "+"), sep = ""))
+  separate_formula <- as.formula(paste(event, "~", paste(c(covariates, 
+                                                           edges_inferred), collapse = "+"), sep = ""))
+  list(a_est = a_est, edges = edges_inferred, data_for_neha = data_for_neha, 
+       combined_formula = combined_formula, separate_formula = separate_formula)
+  
 
 }
