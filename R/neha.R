@@ -358,8 +358,12 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
     if(length(covariates) > 0){
 
     full_estimate <- glm(data_with_aest[,event] ~ as.matrix(data_with_aest[,effect_names]),family=binomial)
-
-    off <- as.matrix(data_with_aest[,covariates])%*%(coef(full_estimate)[2:(length(covariates)+1)])
+    
+    off_coef <- coef(full_estimate)
+    off_coef[is.na(off_coef)] <- 0
+    off <- as.matrix(data_with_aest[, covariates]) %*% 
+      (off_coef[2:(length(covariates) + 
+                     1)])
 
     }
 
@@ -368,7 +372,7 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
     registerDoParallel(cl)
 
     reciever <- NULL
-    edges_subset <- foreach(reciever = unodes,.packages=c("glmulti")) %dopar% {
+    edges_subset <- foreach(reciever = unodes,.packages=c("glmulti"))  foreach::`%dopar%` {
 
       edger <- do.call('rbind',strsplit(names(within_r_corr),"_"))[,2]
 
