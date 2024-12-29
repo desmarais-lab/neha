@@ -202,7 +202,7 @@ neha_geta <- function(eha_data, node, time, event, cascade, ncore=2){
 
   a.estimate <- estimate_a(data_for_neha[,event],data_for_neha[,edge_vars])
 
-  print("a estimation complete.")
+  print("a estimation complete")
 
   data_for_neha[,edge_vars] <- a.estimate[[2]]
 
