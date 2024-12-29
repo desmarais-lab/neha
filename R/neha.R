@@ -7,6 +7,15 @@
 #' @return A data frame in which, in addition to all of the variables in 'eha_data', there is one column for each directed dyad, named 'i_j', where 'i' and 'j' are node ids, in which the value indicates the number of time points before 'time' that 'i' experienced the event in the respective 'cascade'. If 'i' did not experience the cascade before 'time', the value is 0.
 #' @export
 data_neha_discrete <- function(eha_data, node, time, event, cascade){
+  
+  # Ensure data is in correct format
+  if (!inherits(eha_data, "data.frame")) {
+    if (is.null(as.data.frame(eha_data))) {
+      stop("Event history data must be a data.frame object.")
+    } else {
+      eha_data <- as.data.frame(eha_data)
+    }
+  }
 
   # find out if node is numeric
   n1c <- substr(as.character(eha_data[,node]),1,1)
@@ -193,7 +202,7 @@ neha_geta <- function(eha_data, node, time, event, cascade, ncore=2){
 
   a.estimate <- estimate_a(data_for_neha[,event],data_for_neha[,edge_vars])
 
-  print("a estimation complete")
+  print("An estimation is complete.")
 
   data_for_neha[,edge_vars] <- a.estimate[[2]]
 
@@ -301,6 +310,15 @@ neha_geta <- function(eha_data, node, time, event, cascade, ncore=2){
 #' @export
 neha <- function(eha_data,node,time,event,cascade,covariates,
                  ncore=2, negative=F){
+  
+  # Ensure data is in correct format
+  if (!inherits(eha_data, "data.frame")) {
+    if (is.null(as.data.frame(eha_data))) {
+      stop("Event history data must be a data.frame object.")
+    } else {
+      eha_data <- as.data.frame(eha_data)
+    }
+  }
 
   data_with_aest <- neha_geta(eha_data, node = node, time = time, 
                               event = event, cascade = cascade, ncore = ncore)
@@ -480,6 +498,4 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
                                                            edges_inferred), collapse = "+"), sep = ""))
   list(a_est = a_est, edges = edges_inferred, data_for_neha = data_for_neha, 
        combined_formula = combined_formula, separate_formula = separate_formula)
-  
-
 }
