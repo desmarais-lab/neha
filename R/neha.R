@@ -12,6 +12,7 @@ isEHA <- function(eha_data){
   )
 }
 
+
 #' A function to create data for NEHA with discrete time EHA data
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param node A character string name of the variable that gives the node id. Node ids should be character type variables.
