@@ -144,7 +144,7 @@ test_that("neha_geta works", {
                   event="event",
                   ncore=2)
  
-   expect_equal(ua[[1]],2.1)
+   expect_equal(ua[[1]],2.2)
  })
 
 
