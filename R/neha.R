@@ -1,3 +1,18 @@
+#' A function to ensure data is in the correct dataframe format
+#' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
+#' @return A data.frame if conversion is successful, otherwise an error with an informative message
+isEHA <- function(eha_data){
+  tryCatch(
+    {
+      as.data.frame(eha_data)
+    },
+    error = function(cond){
+      stop("Event history data cannot be coerced to a data.frame: ", cond$message)
+    }
+  )
+}
+
+
 #' A function to create data for NEHA with discrete time EHA data
 #' @param eha_data A dataframe that includes one observation for each node at risk of experiencing the event during each at-risk time point in each cascade. Note, it is assumed that each node can experience an event in each cascade once, at most.
 #' @param node A character string name of the variable that gives the node id. Node ids should be character type variables.
@@ -7,6 +22,9 @@
 #' @return A data frame in which, in addition to all of the variables in 'eha_data', there is one column for each directed dyad, named 'i_j', where 'i' and 'j' are node ids, in which the value indicates the number of time points before 'time' that 'i' experienced the event in the respective 'cascade'. If 'i' did not experience the cascade before 'time', the value is 0.
 #' @export
 data_neha_discrete <- function(eha_data, node, time, event, cascade){
+
+  # Ensure EHA data is in a data.frame object
+  eha_data <- isEHA(eha_data)
 
   # find out if node is numeric
   n1c <- substr(as.character(eha_data[,node]),1,1)
@@ -301,7 +319,10 @@ neha_geta <- function(eha_data, node, time, event, cascade, ncore=2){
 #' @export
 neha <- function(eha_data,node,time,event,cascade,covariates,
                  ncore=2, negative=F){
-
+  
+  # Ensure EHA data is in a data.frame object
+  eha_data <- isEHA(eha_data)
+  
   data_with_aest <- neha_geta(eha_data, node = node, time = time, 
                               event = event, cascade = cascade, ncore = ncore)
   a.estimate <- data_with_aest[[1]]
@@ -480,6 +501,4 @@ neha <- function(eha_data,node,time,event,cascade,covariates,
                                                            edges_inferred), collapse = "+"), sep = ""))
   list(a_est = a_est, edges = edges_inferred, data_for_neha = data_for_neha, 
        combined_formula = combined_formula, separate_formula = separate_formula)
-  
-
 }
